@@ -1,0 +1,32 @@
+[package]
+name = "metapower_battery_icp"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "metapower_battery_icp"
+path = "src/main.rs"
+
+
+[dependencies]
+serde = "1.0.111"
+serde_cbor = "0.11"
+serde_bytes = "0.11"
+serde_with = "3.2.0"
+serde_json = "1.0.79"
+metapower_framework = { path = "../framework" }
+anyhow = "1.0.38"
+uuid = { version = "1.0.0", features = ["serde", "v4"] }
+paho-mqtt = { git = "https://github.com/eclipse/paho.mqtt.rust.git", branch = "master" }
+tokio = { version = "1.20", features = ["macros", "rt-multi-thread"] }
+tonic = "0.11.0"
+clap_derive = { version = "4.0.0-rc.1" }
+clap = { version = "4.5.1", features = ["derive"] }
+rand = "0.8.3"
+regex = "1.10.3"
+tempfile = "3.10.1"
+infer = "0.15.0"
+ic-agent = "0.37.1"
+candid = "0.10"
+
+[build-dependencies]

@@ -1,0 +1,173 @@
+syntax = "proto3";
+package llmchat;
+
+service ChatSvc {
+  rpc Talk (QuestionRequest) returns (AnswerReply);
+  rpc TalkBetter (BetterTalkRequest) returns (AnswerReply);
+  rpc TalkBest (BestTalkRequest) returns (AnswerReply);
+  rpc EmbedDocuments(DocsRequest) returns (LlmEmptyResponse);
+  rpc GotDocumentsSummary(SomeDocs) returns (SummarytResponse);
+  rpc GotTopicSubject(EventTopic) returns (SubjectResponse);
+  rpc ClassifyMapTile(TileClassifyRequest) returns (TileClassifyResponse);
+  rpc GotTaskDecomposition(TaskDecompositionRequest) returns (TaskDecompositionResponse);
+  rpc GotBetterQuestion(BetterQuestionRequest) returns (BetterQuestionResponse);
+  rpc GenImageWithPrompt(ImageGenRequest) returns (ImageGenResponse);
+  rpc TextToSpeech(TextToSpeechRequest) returns (TextToSpeechResponse);
+  rpc SpeechToText(SpeechToTextRequest) returns (SpeechToTextResponse);
+  rpc QueryEmbbeedings(QueryEmbeddingsRequest) returns (QueryEmbeddingsResponse);
+  rpc XRetweet(XRetweetRequest) returns (LlmEmptyResponse);
+  rpc XDirectMessage(XDirectMessageRequest) returns (LlmEmptyResponse);
+  rpc RequestImageDescription(ImageDescriptionRequest) returns (ImageDescriptionResponse);
+  rpc RequestImageDescriptionWithPrompt(ImagePromptRequest) returns (ImageDescriptionResponse);
+  rpc RequestImageChat(ImageChatRequest) returns (ImageDescriptionResponse);
+  rpc GenMultiImagesWithPrompt(MultiImagesGenRequest) returns (MultiImagesGenResponse);
+  rpc GenCharacterWithPrompt(CharacterGenRequest) returns (CharacterGenResponse);
+}
+
+message LlmEmptyResponse{}
+
+message ImagePromptRequest{
+  string image_url=1;
+  string prompt=2;
+  string input=3;
+}
+message ImageDescriptionRequest{
+  string image_url=1;
+}
+message ImageChatRequest{
+  string image_url=1;
+  string question=2;
+}
+message ImageDescriptionResponse{
+  string description=1;
+}
+message XRetweetRequest{
+  string tweet_id = 1;
+}
+message XDirectMessageRequest{
+  string recipient_id = 1;
+  string message_text = 2;
+}
+message QueryEmbeddingsRequest{
+  string question=1;
+  string collection_name=3;
+  string db_path=4;
+}
+message QueryEmbeddingsResponse{
+  string result=1;
+}
+message SpeechToTextRequest{
+  string audio_url=1;
+}
+message SpeechToTextResponse{
+  string text=1;
+}
+message TextToSpeechRequest{
+  string text=1;
+}
+message TextToSpeechResponse{
+  string audio_url=1;
+}
+message ImageGenRequest{
+  string prompt=1;
+}
+message ImageGenResponse{
+  string image_url=1;
+}
+message CharacterGenRequest{
+  repeated string tags=1;
+  string name=2;
+  string gender=3;
+}
+message CharacterGenResponse{
+  string iss=1;
+}
+message MultiImagesGenRequest{
+  string prompt=1;
+  int32 num_images=2;
+}
+message MultiImagesGenResponse{
+  repeated string image_url=1;
+}
+
+message BestTalkRequest{
+  string question=1;
+  string prompt=2;
+  string collection_name=3;
+  string db_path=4;
+}
+
+message BetterTalkRequest{
+  string question=1;
+  repeated string collection_name=2;
+  string db_path=3;
+  string prompt=4;
+}
+message TaskDecompositionRequest{
+  string question=1;
+}
+message TaskDecompositionResponse{
+  repeated string plan=1;
+}
+message ChatHistory{
+  string ai_message=1;
+  string human_message=2;
+}
+message BetterQuestionRequest{
+  string question=1;
+  bool stepback=2;
+  repeated string collection_name=3;
+  string db_path=4;
+  repeated ChatHistory chat_histories=5;
+}
+message BetterQuestionResponse{
+    string question_modified=1;
+}
+message SomeDocs {
+  string doc_file=1;
+  string doc_format=2;
+}
+
+message EventTopic {
+  string topic=1;
+  repeated string subjects=2;
+}
+
+message SummarytResponse {
+  string summary=1;
+}
+
+message SubjectResponse {
+  string subject=1;
+}
+
+message DocsRequest {
+  string doc_file=1;
+  string collection=2;
+  string db_path=3;
+  string doc_id=4;
+  string doc_format=5;
+}
+
+message QuestionRequest {
+  string question=1;
+  string subject=2;
+  string persona=3;
+}
+
+message AnswerReply {
+  string answer=1;
+}
+
+message TileClassifyRequest {
+  repeated string name=1;
+  repeated string category=2;
+}
+
+message TileTypeMap {
+  string category=1;
+  repeated string name=2;
+}
+message TileClassifyResponse {
+  repeated TileTypeMap classified_tiles=1;
+}

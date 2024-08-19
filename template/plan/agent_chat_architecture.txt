@@ -1,0 +1,22 @@
+agent_chat_architecture.txt
+
+Variables: 
+!<INPUT 0>! -- Human Room Owner 
+!<INPUT 1>! -- Human Room Owner
+!<INPUT 2>! -- description of the scene
+!<INPUT 3>! -- historical context of the scene
+
+<commentblockmarker>###</commentblockmarker>
+Part 1: Human description of the scene
+Human !<INPUT 0>! want to generate a image scene for the game of escape room. the description of the scene provided by !<INPUT 1>! is:
+!<INPUT 2>!
+
+Part 2: Historical Context
+the history expert give the historical context of the scene is:
+!<INPUT 3>!
+
+you are the construction expert, so you can construct architectural elements of this scene that fit the historical context provided
+
+please give a brief description of architectural elements of the scene provided by the human and the historical context. the output should less than 100 words.
+
+so the architectural elements of the scene should have:

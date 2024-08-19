@@ -1,0 +1,218 @@
+syntax = "proto3";
+package metapowermatrix_agent;
+
+service MetaPowerMatrixAgentSvc {
+	rpc RequestAirdrop (AirdropRequest) returns (SimpleResponse);
+    rpc RequestPopulationRegistration(PopulationRegistrationRequest) returns (SimpleResponse);
+	rpc RequestPatoInfo (SimpleRequest) returns (PatoInfoResponse);
+    rpc RequestPatoProfessionals (SimpleRequest) returns (ProfessionalsResponse);
+    rpc RequestForProfessionals (EmptyRequest) returns (PatoOfProResponse);
+    rpc RequestProfessionalRegistration(ProfessionalRegistrationRequest) returns (EmptyRequest);
+	rpc RequestPatoSn(SnRequest) returns (SnResponse);
+    rpc RequestForAllPatos (EmptyRequest) returns (AllPatosResponse);
+	rpc RequestPatoNameAndPro(NameRequest) returns (NameResponse);
+    rpc RequestAddBalance (ChangeBalanceRequest) returns (SimpleResponse);
+    rpc RequestMinusBalance (ChangeBalanceRequest) returns (SimpleResponse);
+    rpc RequestDeposit (ChangeBalanceRequest) returns (SimpleResponse);
+    rpc RequestLiveRegistration(LiveRegRequest) returns (EmptyRequest);
+    rpc RequestInjectHumanVoice(InjectHumanVoiceRequest) returns (EmptyRequest);
+    rpc RequestLiveChatSessionInfo(SimpleRequest) returns (LiveChatSessionResponse);
+    rpc RequestPatoAuthToken(SimpleRequest) returns (SimpleResponse);
+    rpc QueryPatoAuthToken(TokenRequest) returns (TokenResponse);
+    rpc RequestPatoKnowledges (SimpleRequest) returns (ProfessionalsResponse);
+    rpc RequestTopicChat (TopicChatRequest) returns (EmptyRequest);
+    rpc RequestTopicChatHistory (TopicChatRequest) returns (TopicChatHisResponse);
+    rpc RequestCreateRoom(RoomCreateRequest) returns (RoomCreateResponse);
+    rpc RequestGameRoomList(SimpleRequest) returns (RoomListResponse);
+    rpc LogUserActive(UserActiveRequest) returns (EmptyRequest);
+    rpc RequestPatoByName(SimpleRequest) returns (NameResponse);
+    rpc RequestLiveRoomList(EmptyRequest) returns (LiveRoomListResponse);
+    rpc RequestKolRegistration(KolRegistrationRequest) returns (EmptyRequest);
+    rpc RequestKolList(EmptyRequest) returns (KolListResponse);
+    rpc RequestAddKolFollower(FollowKolRequest) returns (EmptyRequest);
+    rpc RequestMarriageRegistration(KolRegistrationRequest) returns (EmptyRequest);
+    rpc RequestAddMarriageFollower(FollowKolRequest) returns (EmptyRequest);
+    rpc RequestMarriageList(EmptyRequest) returns (KolListResponse);
+}
+
+message EmptyRequest{}
+
+message UserActiveRequest{
+    string id=1;
+    string page=2;
+    string action=3;
+}
+message LiveRoomInfo{
+    string room_id=1;
+    string owner=2;
+    string title=3;
+    string description=4;
+    string cover=5;
+    string town=6;
+    string role1=7;
+    string role2=8;
+}
+message LiveRoomListResponse{
+    repeated LiveRoomInfo rooms=1;
+}
+message RoomInfo{
+    string room_id=1;
+    string owner=2;
+    string title=3;
+    string description=4;
+    string cover=5;
+    string town=6;
+}
+message RoomListResponse{
+    repeated RoomInfo rooms=1;
+}
+message RoomCreateRequest{
+    string owner=1;
+    string title=2;
+    string description=3;
+    string town=4;
+}
+message RoomCreateResponse{
+    string room_id=1;
+    string cover=2;
+}
+message TopicChatHisResponse{
+    repeated string history = 1;
+}
+message TopicChatRequest{
+    string initial = 1;
+    string topic = 2;
+    string town = 3;    
+}
+message TokenRequest{
+    string token=2;
+}
+message TokenResponse{
+    string id=1;
+    string name=2;
+}
+message PatoOfPro{
+    string id = 1;
+    repeated string subjects = 2;
+    string name = 3;
+}
+message LiveChatSessionResponse{
+    string owner=1;
+    string role_1=2;
+    string role_2=3;
+    string topic=4;
+}
+message InjectHumanVoiceRequest{
+    string id=1;
+    repeated string roles=2;
+    string session=3;
+    string message=4;
+}
+message LiveRegRequest{
+    string owner=1;
+    string role1=2;
+    string role2=3;
+    string title=4;
+    string cover=5;
+    string topic=6;
+    string room_id=7;
+}
+
+message SimpleRequest{
+    string id=1;
+}
+
+message ChangeBalanceRequest{
+    string id=1;
+    float amount=2;
+    string key = 3;
+}
+
+message SimpleResponse{
+    bool success=1;
+    string message=2;
+}
+
+message PopulationRegistrationRequest {
+    string id=1;
+    string name=2;
+}
+
+message AirdropRequest {
+    string id=1;
+    float amount=2;
+}
+
+message PatoInfoResponse {
+    string id=1;
+    string name=2;
+    int64 sn=3;
+    string registered_datetime=4;
+    repeated string professionals=5;
+    float balance=6;
+    repeated string tags = 7;
+    string avatar = 8;
+}
+
+message PatoOfProResponse {
+    repeated PatoOfPro patos=1;
+}
+
+message ProfessionalsResponse {
+    repeated string professionals=1;
+}
+
+message ProfessionalRegistrationRequest {
+    string id=1;
+    string message=2;
+    string knowledge=3;
+    string subject=4;
+}
+
+message KolRegistrationRequest {
+    string id=1;
+    string key=2;
+}
+message FollowKolRequest {
+    string id=1;
+    string follower=2;
+    string key=3;
+}
+message KolRelations{
+    string id=1;
+    string name=2;
+    repeated string follower=3;
+}
+message KolListResponse {
+    repeated KolRelations relations=1;
+}
+
+message SnRequest {
+    repeated string id=1;
+}
+
+message NameRequest {
+    repeated string id=1;
+}
+
+message SnIdPaire {
+    string id=1;
+    string sn=2;
+}
+
+message SnResponse {
+    repeated SnIdPaire pato_sn_id=1;
+}
+
+message NamePros{
+    string id=1;
+    string name=2;
+    repeated string pros=3;
+}
+message NameResponse {
+    repeated NamePros name_pros=1;
+}
+
+message AllPatosResponse {
+    repeated SnIdPaire pato_sn_id=1;
+}

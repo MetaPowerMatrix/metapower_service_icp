@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "framework",
+    "battery",
+    "portal",
+    "stream",
+]
+resolver = "2"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = 'z'

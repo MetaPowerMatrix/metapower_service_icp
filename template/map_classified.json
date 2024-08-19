@@ -1,0 +1,302 @@
+[
+    {
+        "category": "office building",
+        "name": [
+            "Empire State Building"
+        ]
+    },
+    {
+        "category": "park",
+        "name": [
+            "Central Park"
+        ]
+    },
+    {
+        "category": "shopping mall",
+        "name": [
+            "Times Square"
+        ]
+    },
+    {
+        "category": "train station",
+        "name": [
+            "Grand Central Terminal"
+        ]
+    },
+    {
+        "category": "cafe",
+        "name": [
+            "Rockefeller Center"
+        ]
+    },
+    {
+        "category": "museum",
+        "name": [
+            "Statue of Liberty"
+        ]
+    },
+    {
+        "category": "landmark",
+        "name": [
+            "Brooklyn Bridge"
+        ]
+    },
+    {
+        "category": "financial district",
+        "name": [
+            "Wall Street"
+        ]
+    },
+    {
+        "category": "office building",
+        "name": [
+            "Chrysler Building"
+        ]
+    },
+    {
+        "category": "office building",
+        "name": [
+            "One World Trade Center"
+        ]
+    },
+    {
+        "category": "museum",
+        "name": [
+            "Metropolitan Museum of Art"
+        ]
+    },
+    {
+        "category": "office building",
+        "name": [
+            "Flatiron Building"
+        ]
+    },
+    {
+        "category": "library",
+        "name": [
+            "New York Public Library"
+        ]
+    },
+    {
+        "category": "church",
+        "name": [
+            "St. Patrick's Cathedral"
+        ]
+    },
+    {
+        "category": "park",
+        "name": [
+            "High Line"
+        ]
+    },
+    {
+        "category": "stadium",
+        "name": [
+            "Madison Square Garden"
+        ]
+    },
+    {
+        "category": "cafe",
+        "name": [
+            "Lincoln Center"
+        ]
+    },
+    {
+        "category": "cafe",
+        "name": [
+            "Broadway"
+        ]
+    },
+    {
+        "category": "amusement park",
+        "name": [
+            "Coney Island"
+        ]
+    },
+    {
+        "category": "stadium",
+        "name": [
+            "Yankee Stadium"
+        ]
+    },
+    {
+        "category": "stadium",
+        "name": [
+            "Citi Field"
+        ]
+    },
+    {
+        "category": "concert hall",
+        "name": [
+            "Carnegie Hall"
+        ]
+    },
+    {
+        "category": "museum",
+        "name": [
+            "Guggenheim Museum"
+        ]
+    },
+    {
+        "category": "theater",
+        "name": [
+            "Radio City Music Hall"
+        ]
+    },
+    {
+        "category": "school",
+        "name": [
+            "Columbia University"
+        ]
+    },
+    {
+        "category": "school",
+        "name": [
+            "New York University"
+        ]
+    },
+    {
+        "category": "school",
+        "name": [
+            "Fordham University"
+        ]
+    },
+    {
+        "category": "museum",
+        "name": [
+            "Museum of Modern Art"
+        ]
+    },
+    {
+        "category": "museum",
+        "name": [
+            "American Museum of Natural History"
+        ]
+    },
+    {
+        "category": "museum",
+        "name": [
+            "Intrepid Sea, Air & Space Museum"
+        ]
+    },
+    {
+        "category": "cafe",
+        "name": [
+            "Ellis Island"
+        ]
+    },
+    {
+        "category": "museum",
+        "name": [
+            "Brooklyn Museum"
+        ]
+    },
+    {
+        "category": "zoo",
+        "name": [
+            "Bronx Zoo"
+        ]
+    },
+    {
+        "category": "cafe",
+        "name": [
+            "New York Botanical Garden"
+        ]
+    },
+    {
+        "category": "racetrack",
+        "name": [
+            "Aqueduct Racetrack"
+        ]
+    },
+    {
+        "category": "racetrack",
+        "name": [
+            "Belmont Park"
+        ]
+    },
+    {
+        "category": "park",
+        "name": [
+            "Jones Beach State Park"
+        ]
+    },
+    {
+        "category": "cafe",
+        "name": [
+            "Robert Moses State Park"
+        ]
+    },
+    {
+        "category": "park",
+        "name": [
+            "Coney Island Creek Park"
+        ]
+    },
+    {
+        "category": "park",
+        "name": [
+            "Floyd Bennett Field"
+        ]
+    },
+    {
+        "category": "airport",
+        "name": [
+            "John F. Kennedy International Airport"
+        ]
+    },
+    {
+        "category": "airport",
+        "name": [
+            "LaGuardia Airport"
+        ]
+    },
+    {
+        "category": "cafe",
+        "name": [
+            "Newark Liberty International Airport"
+        ]
+    },
+    {
+        "category": "airport",
+        "name": [
+            "Long Island MacArthur Airport"
+        ]
+    },
+    {
+        "category": "cafe",
+        "name": [
+            "Teterboro Airport"
+        ]
+    },
+    {
+        "category": "airport",
+        "name": [
+            "Westchester County Airport"
+        ]
+    },
+    {
+        "category": "airport",
+        "name": [
+            "Stewart International Airport"
+        ]
+    },
+    {
+        "category": "airport",
+        "name": [
+            "Atlantic City International Airport"
+        ]
+    },
+    {
+        "category": "cafe",
+        "name": [
+            "Francis S. Gabreski Airport"
+        ]
+    },
+    {
+        "category": "airport",
+        "name": [
+            "Republic Airport"
+        ]
+    }
+]

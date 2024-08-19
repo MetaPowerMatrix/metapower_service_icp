@@ -1,0 +1,49 @@
+iterative_convo_v1.txt
+
+Variables: 
+!<INPUT 0>! -- persona ISS
+!<INPUT 1>! -- persona name
+!<INPUT 2>! -- retrieved memory
+!<INPUT 3>! -- past context
+!<INPUT 4>! -- current location
+!<INPUT 5>! -- current context
+!<INPUT 6>! -- persona name
+!<INPUT 7>! -- target persona name
+!<INPUT 8>! -- curr convo
+!<INPUT 9>! -- persona name
+!<INPUT 10>! -- target persona name
+!<INPUT 11>! -- persona name
+!<INPUT 12>! -- persona name
+!<INPUT 13>! -- persona name
+<commentblockmarker>###</commentblockmarker>
+Context for the task: 
+
+PART 1. 
+!<INPUT 0>!
+
+Here is the memory that is in !<INPUT 1>!'s head: 
+!<INPUT 2>!
+
+PART 2. 
+Past Context: 
+!<INPUT 3>!
+
+Current Location: !<INPUT 4>!
+
+Current Context: 
+!<INPUT 5>!
+
+!<INPUT 6>! and !<INPUT 7>! are chatting. Here is their conversation so far: 
+!<INPUT 8>!
+
+the last one !<INPUT 13>! said is:
+!<INPUT 14>!
+
+here is some knowledage context for you to refer to:
+{context}
+
+---
+Task: Given the above, what should !<INPUT 9>! say to !<INPUT 10>! next in the conversation concisely? use Chinese for output and must not generate more than 150 tokens .
+
+Output format: Output the following format: 
+"!<INPUT 11>!": "<!<INPUT 12>!'s utterance>"

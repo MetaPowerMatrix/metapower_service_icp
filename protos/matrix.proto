@@ -1,0 +1,113 @@
+syntax = "proto3";
+package metapowermatrix_controller;
+
+service MetaPowerMatrixControllerSvc {
+	rpc RequestCreatePato (CreateRequest) returns (CreateResonse);
+	rpc RequestPatoLogin (LoginRequest) returns (EmptyResponse);
+	rpc RequestPray(PrayRequest) returns (EmptyResponse);
+	rpc RequestMakeProfession (MakeProfessionRequest) returns (EmptyResponse);
+	rpc RequestMakeTownMap (EmptyResponse) returns (EmptyResponse);
+	rpc MakePlanForPato (MakePlanRequest) returns (MakePlanResponse);
+	rpc RequestPatoNearby (NearbyRequest) returns (NearbyRespnse);
+	rpc RequestPlaceInMap (PlaceRequest) returns (PlaceResonse);
+	rpc AcceptDonation (DonationRequest) returns (EmptyResponse);
+	rpc AcceptStake (DonationRequest) returns (EmptyResponse);
+	rpc AcceptSubscription (SubscriptionRequest) returns (EmptyResponse);
+	rpc RequestHotAI(EmptyResponse) returns (HotAIResponse);
+	rpc RequestSharedKnowledges(EmptyResponse) returns (SharedKnowledgesResponse);
+	rpc RequestHotTopics(EmptyResponse) returns (HotTopicResponse);
+	rpc RequestPayCreditCard(CreditCardPayRequest) returns (CreditCardPayResponse);
+	rpc CheckPayOrders(CheckPayOrdersRequest) returns (CheckPayOrdersResponse);
+}
+
+message EmptyResponse{}
+
+message CheckPayOrdersRequest{
+	string order = 1;
+	string buyer_id = 2;
+}
+message CheckPayOrdersResponse{
+	string order = 1;
+	bool paid = 2;
+}
+message CreditCardPayRequest {
+	string id = 1;
+	string item = 2;
+	int32 amount = 3;
+}
+message CreditCardPayResponse{
+	string pay_url = 1;
+}
+
+message Knowledge{
+	string sig = 1;
+	string title = 2;
+	string owner = 3;
+	string summary = 4;
+}
+message SharedKnowledgesResponse{
+	repeated Knowledge books = 1;
+}
+
+message HotAI{
+	string id = 1;
+	string name = 2;
+	int32 talks = 3;
+	string pros = 4;
+}
+message HotAIResponse{
+	repeated HotAI sheniu = 1;
+}
+message HotTopicResponse{
+	repeated string topics = 1;
+}
+message SubscriptionRequest{
+	string id = 1;
+	float amount = 2;
+	string sub_type=3;
+}
+
+message DonationRequest{
+	string id = 1;
+	float amount = 2;
+}
+
+message CreateRequest{
+	string name = 1;
+}
+message CreateResonse{
+	string id = 1;
+}
+message NearbyRequest{
+	int64 sn = 1;
+}
+message NearbyRespnse{
+	repeated string id = 1;
+}
+message LoginRequest{
+	string id = 1;
+}
+message PrayRequest{
+	string id = 1;
+	string message = 2;
+}
+message MakeProfessionRequest{
+	string id = 1;
+	string message = 2;
+	string knowledge = 3;
+	string file_sig=4;
+}
+message MakePlanRequest{
+	string id = 1;
+	string message = 2;
+	bool refresh = 3;
+}
+message MakePlanResponse{
+	string planFile = 1;
+}
+message PlaceRequest{
+	string place_type = 1;
+}
+message PlaceResonse{
+	repeated int64 sn = 1;
+}

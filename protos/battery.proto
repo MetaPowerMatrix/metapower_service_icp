@@ -1,0 +1,284 @@
+syntax = "proto3";
+package metapowermatrix_battery;
+
+service MetaPowerMatrixBatterySvc {
+	rpc talk (MessageRequest) returns (TalkResponse);
+	rpc CreateEvent (EventRequest) returns (EmptyRequest);
+	rpc GetChatMessages (GetMessageRequest) returns (GetMessageResponse);
+	rpc RequestPatoEvent(EmptyRequest) returns (EventResponse);
+	rpc RequestPatoName(EmptyRequest) returns (PatoNameResponse);
+	rpc RequestPatoISS(EmptyRequest) returns (PatoISSResponse);
+	rpc ChangePatoISS(PatoISSEditRequest) returns (EmptyRequest);
+	rpc RequestPatoCall(CallRequest) returns (EmptyRequest);
+	rpc ArchiveChatMessages (ArchiveMessageRequest) returns (EmptyRequest);
+	rpc RequestOpenLive(OpenLiveRequest) returns (OpenLiveResponse);
+	rpc RequestContinueLive(ContinueLiveRequest) returns (EmptyRequest);
+	rpc RequestCreateLiveSession(CreateLiveSessionRequest) returns (EmptyRequest);
+	rpc RequestEndLive(EmptyRequest) returns (EmptyRequest);
+	rpc RequestRestoreLive(RestoreLiveRequest) returns (EmptyRequest);
+	rpc RequestInstruct(InstructRequest) returns (InstructResponse);
+	rpc GetProChatMessages (GetProMessageRequest) returns (GetMessageResponse);
+	rpc RequestContinueChat(ContinueRequest) returns (EmptyRequest);
+	rpc RequestEditMessages(EditeReqeust) returns (EmptyRequest);
+	rpc RequestGoTown(GoTownRequest) returns (EmptyRequest);
+	rpc RequestSummaryAndEmbedding(SummaryAndEmbeddingRequest) returns (SummaryAndEmbeddingResponse);
+	rpc RequestQueryEmbedding(QueryEmbeddingRequest) returns (QueryEmbeddingResponse);
+	rpc RequestDocumentSummary(DocumentSummaryRequest) returns (DocumentSummaryResponse);
+	rpc RequestPatoKnowledges(KnowLedgesRequest) returns (KnowLedgesResponse);
+	rpc RequestShareKnowledge(ShareKnowLedgesRequest) returns (EmptyRequest);
+	rpc AddSharedKnowledge(ShareKnowLedgesRequest) returns (EmptyRequest);
+	rpc RequestGenerateScene(SceneRequest) returns (SceneResponse);
+	rpc RequestImageDescription(SvcImageDescriptionRequest) returns (SvcImageDescriptionResponse);
+	rpc RequestChatWithImage(ImageChatRequest) returns (ImageChatResponse);
+	rpc RequestJoinRoom(JoinRoomRequest) returns (JoinRoomResponse);
+	rpc RequestClueFromImageChat(ImageChatRequest) returns (ImageChatResponse);
+	rpc ReceiveGameAnswer(GameAnswerRequest) returns (GameAnswerResponse);
+	rpc AcceptGameAnswer(EmptyRequest) returns (GameAnswerResponse);
+	rpc RequestAnswerImage(ImageAnswerRequest) returns (ImageContextResponse);
+	rpc RequestRevealAnswer(RevealAnswerRequest) returns (RevealAnswerResponse);
+	rpc BecomeKOL(BecomeKolRequest) returns (EmptyRequest);
+	rpc RequestJoinKOLRoom(JoinKolRoomRequest) returns (EmptyRequest);
+	rpc RequestImageContext(ImageContextRequest) returns (ImageContextResponse);
+	rpc RequestImageGenPrompt(ImageGenPromptRequest) returns (ImageContextResponse);
+	rpc RequestSelfTalkForTodayPlan(EmptyRequest) returns (EmptyRequest);
+	rpc RequestSubmitTags(SubmitTagsRequest) returns (SubmitTagsResponse);
+	rpc JoinMarriage(BecomeKolRequest) returns (EmptyRequest);
+	rpc LikeMarriageOwner(JoinKolRoomRequest) returns (EmptyRequest);
+}
+
+message EmptyRequest{}
+
+message SubmitTagsRequest {
+	repeated string tags = 1;
+}
+message SubmitTagsResponse {
+	string avatar = 1;
+}
+message ImageAnswerRequest{
+	string input = 1;
+	string prompt = 2;
+	string image_url = 3;
+	string room_id = 4;
+	int32 level = 5;
+}
+
+message ImageGenPromptRequest{
+	string description = 1;
+	string Historical = 2;
+	string architectural = 3;
+}
+message ImageContextResponse{
+	string context = 1;
+}
+message ImageContextRequest{
+	string image_url = 1;
+	string prompt = 2;
+	string input = 3;
+}
+message BecomeKolRequest{
+	string key = 1;
+}
+message JoinKolRoomRequest{
+	string kol = 1;
+	string follower = 2;
+	string key = 3;
+}
+message RevealAnswerRequest{
+	string id = 1;
+	string owner = 2;
+	string room_id = 3;
+	int32 level = 4;
+}
+message RevealAnswerResponse{
+	string answer = 1;
+}
+message GameAnswerRequest{
+	string id = 1;
+	string name = 2;
+	string answer = 3;
+	string room_id = 4;
+	int32 level = 5;
+}
+message GameAnswerResponse{
+	repeated string correct_gamers = 1;
+}
+message JoinRoomRequest{
+	string id = 1;
+	string name = 2;
+	string room_id = 3;
+	int32 level = 4;
+}
+message JoinRoomResponse{
+	int32 scene_count = 1;
+	string last_scene = 2;
+}
+message ImageChatRequest{
+	string reply_to = 1;
+	string message = 2;
+	string image_url = 3;
+	string room_id = 4;
+	int32 level = 5;
+}
+message ImageChatResponse{
+	string answer=1;
+	string answer_voice=2;
+}
+message SvcImageDescriptionRequest{
+	string image_url=1;
+}
+message SvcImageDescriptionResponse{
+	string description=1;
+}
+message SceneRequest {
+	string description = 1;
+	string sample_image = 2;
+	string room_id = 3;
+}
+message SceneResponse {
+	string scene_image = 1;
+}
+message ShareKnowLedgesRequest {
+	string sig = 1;
+	string title = 2;
+	string owner = 3;
+}
+message KnowLedgesRequest {
+	string id = 1;
+}
+message KnowLedgeInfo{
+	string title = 1;
+	string sig = 2;
+	string owner = 3;
+	string summary = 4;
+}
+message KnowLedgesResponse {
+	repeated KnowLedgeInfo KnowledgeInfo = 1;
+}
+message DocumentSummaryRequest {
+	string document = 1;
+}
+message DocumentSummaryResponse {
+	string summary = 1;
+}
+message QueryEmbeddingRequest {
+	string query = 1;
+	string collection_name = 2;
+}
+message QueryEmbeddingResponse {
+	string result = 1;
+}
+message SummaryAndEmbeddingResponse {
+	string knowledge_file_sig = 1;
+	string transcript_file_sig = 2;
+}
+message SummaryAndEmbeddingRequest {
+	string link = 1;
+	string knowledge_file = 2;
+	string transcript_file = 3;
+	string knowledge_file_sig = 4;
+	string transcript_file_sig = 5;
+	string link_sig = 6;
+}
+message GoTownRequest {
+	string town = 1;
+	string topic = 2;
+}
+message EditeReqeust {
+	string initial = 1;
+	string kol = 2;
+	string messages = 3;
+}
+message ContinueRequest{
+	string session = 1;
+	string date = 2;
+	bool continued = 3;
+}
+message InstructRequest {
+	string reply_to = 1;
+	string message = 2;
+	string kol = 3;
+}
+message InstructResponse {
+	string answer = 1;
+}
+message CreateLiveSessionRequest {
+	string session = 6;
+}
+message RestoreLiveRequest {
+	string session = 2;
+}
+message ContinueLiveRequest {
+	repeated string roles = 1;
+	string session = 2;
+	string message = 3;
+}
+message ContinueLiveResponse {
+	string role_1_talk = 1;
+	string role_2_talk = 2;
+	string session = 3;
+}
+message OpenLiveRequest {
+	string role_1_id = 1;
+	string role_2_id = 2;
+	string title = 3;
+	string live_topic = 4;
+	string session = 5;
+}
+message OpenLiveResponse {
+	string cover = 1;
+	string room_id = 3;
+}
+message EventResponse {
+    repeated string events=1;
+}
+
+message TalkResponse {
+	string speaker = 1;
+	string message = 2;
+}
+
+message MessageRequest {
+	string message = 1;
+	string subject = 2;
+	string prompt = 3;
+}
+
+message PatoNameResponse {
+	string name = 1;
+}
+
+message PatoISSResponse {
+	string iss = 1;
+}
+message PatoISSEditRequest {
+	string iss = 1;
+}
+
+message GetMessageRequest {
+	string id = 1;
+	string date = 2;
+}
+
+message GetProMessageRequest {
+	string id = 1;
+	string date = 2;
+	string proid = 3;
+}
+
+message ArchiveMessageRequest {
+	string session = 1;
+	string date = 2;
+}
+
+message GetMessageResponse {
+	string content = 1;
+}
+
+message EventRequest {
+	string topic = 1;
+}
+
+message CallRequest {
+	string id = 1;
+	string topic = 2;
+}

@@ -1,0 +1,30 @@
+iterative_convo_topic.txt
+
+Variables: 
+!<INPUT 0>! -- place
+!<INPUT 1>! -- place
+!<INPUT 2>! -- chat history
+!<INPUT 3>! -- topic
+!<INPUT 4>! -- last talked person
+!<INPUT 5>! -- last talked statement
+!<INPUT 6>! -- next talked person
+!<INPUT 7>! -- next talked person
+!<INPUT 8>! -- next talked person
+<commentblockmarker>###</commentblockmarker>
+Context for the task: 
+Current Location: !<INPUT 0>!
+
+Here someone in !<INPUT 1>! are chatting about topic !<INPUT 2>!. Here is their conversation so far: 
+!<INPUT 3>!
+
+the last one !<INPUT 4>! said is:
+!<INPUT 5>!
+
+here is some knowledage context for you to refer to:
+{context}
+
+---
+Task: Given the above, what should !<INPUT 6>! say next in the conversation concisely about this topic? use Chinese for output and must not generate more than 150 tokens .
+
+Output format: Output the following format: 
+"!<INPUT 7>!": "<!<INPUT 8>!'s utterance>"
