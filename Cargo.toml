@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "framework",
-    "battery",
     "portal",
     "stream",
 ]

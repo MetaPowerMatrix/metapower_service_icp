@@ -9,6 +9,7 @@ export LDFLAGS=-L/opt/openssl/lib64/
 CROSS_COMPILE=x86_64-linux-musl- cargo build --release --target x86_64-unknown-linux-musl
 
 export RUSTFLAGS="-A unused"
+export RUSTFLAGS=$RUSTFLAGS' -C target-feature=+simd128'
 
 ./bin/mosquitto -c conf/mosquitto.conf -v
 

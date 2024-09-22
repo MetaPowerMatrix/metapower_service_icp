@@ -361,11 +361,11 @@ async fn portal_upload_knowledge(mut payload: Multipart) -> actix_web::Result<im
     // Iterate over multipart/form-data
     while let Ok(Some(mut field)) = payload.try_next().await {
         let content_disposition = field.content_disposition();
-        let field_name = content_disposition.get_name().unwrap_or("");
+        let field_name = content_disposition.unwrap().get_name().unwrap_or("");
         // Get the filename from the content-disposition header
         if filename.is_empty() {
             filename = content_disposition
-                .get_filename()
+                .unwrap().get_filename()
                 .unwrap_or("knowledge file")
                 .to_string();
             println!("Filename: {}", filename);
@@ -657,7 +657,7 @@ async fn portal_upload_image_for_description(
     // Iterate over multipart/form-data
     while let Ok(Some(mut field)) = payload.try_next().await {
         let content_disposition = field.content_disposition();
-        let field_name = content_disposition.get_name().unwrap_or("");
+        let field_name = content_disposition.unwrap().get_name().unwrap_or("");
 
         match field_name {
             "file" => {
