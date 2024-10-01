@@ -2,6 +2,7 @@ use candid::CandidType;
 use serde::{Deserialize, Serialize};
 
 pub mod ai_town;
+pub mod bsc_proxy;
 
 // from metapowermatrix_matrix
 
@@ -199,6 +200,15 @@ pub struct SnIdPaire {
 }
 
 #[derive(Deserialize, CandidType)]
+pub struct BatteryCallParameters {
+    pub id: String,
+    pub sn: i64,
+    pub token: String,
+    pub method_name: String,
+    pub args: String,
+}
+
+#[derive(Deserialize, CandidType)]
 pub struct SnRequest {
     pub id: Vec<String>,
 }
@@ -337,4 +347,133 @@ pub struct UserActiveRequest {
     pub id: String,
     pub page: String,
     pub action: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct SummaryAndEmbeddingRequest {
+    pub link: String,
+    pub knowledge_file: String,
+    pub transcript_file: String,
+    pub knowledge_file_sig: String,
+    pub transcript_file_sig: String,
+    pub link_sig: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct ArchiveMessageRequest {
+    pub session: String,
+    pub date: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct InstructRequest {
+    pub reply_to: String,
+    pub message: String,
+    pub kol: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct GameAnswerRequest {
+    pub id: String,
+    pub name: String,
+    pub answer: String,
+    pub room_id: String,
+    pub level: i32,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct ImageGenPromptRequest {
+    pub description: String,
+    pub historical: String,
+    pub architectural: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct ImageChatRequest {
+    pub reply_to: String,
+    pub message: String,
+    pub image_url: String,
+    pub room_id: String,
+    pub level: i32,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct ImageAnswerRequest {
+    pub input: String,
+    pub prompt: String,
+    pub image_url: String,
+    pub room_id: String,
+    pub level: i32,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct SvcImageDescriptionRequest {
+    pub image_url: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct CallRequest {
+    pub id: String,
+    pub topic: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct GetMessageRequest {
+    pub id: String,
+    pub date: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct EditeReqeust {
+    pub initial: String,
+    pub kol: String,
+    pub messages: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct ContinueRequest {
+    pub session: String,
+    pub date: String,
+    pub continued: bool,
+}
+
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct KnowLedgesRequest {
+    pub id: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct SubmitTagsRequest {
+    pub tags: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct ShareKnowLedgesRequest {
+    pub sig: String,
+    pub title: String,
+    pub owner: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct BecomeKolRequest {
+    pub key: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct JoinKolRoomRequest {
+    pub kol: String,
+    pub follower: String,
+    pub key: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct QueryEmbeddingRequest {
+    pub query: String,
+    pub collection_name: String,
+}
+
+#[derive(Deserialize, Serialize, CandidType)]
+pub struct DocumentSummaryRequest {
+    pub document: String,
 }

@@ -5,18 +5,17 @@ use std::time::SystemTime;
 use std::env;
 use anyhow::{anyhow, Error};
 use candid::Decode;
-use metapower_framework::icp::{call_update_method, AGENT_SMITH_CANISTER, NAIS_MATRIX_CANISTER};
-use metapower_framework::service::metapowermatrix_battery_mod::battery_grpc::SubmitTagsRequest;
-use metapower_framework::{AI_MATRIX_DIR, XFILES_LOCAL_DIR, XFILES_SERVER};
+use metapower_framework::icp::{call_update_method, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER, NAIS_MATRIX_CANISTER};
+use metapower_framework::{ChatMessage, PatoInfo, SessionMessages, AI_MATRIX_DIR, XFILES_LOCAL_DIR, XFILES_SERVER};
 use metapower_framework::{
-    get_now_date_str, log, service::metapowermatrix_battery_mod::battery_grpc::{
-            meta_power_matrix_battery_svc_client::MetaPowerMatrixBatterySvcClient, ArchiveMessageRequest, BecomeKolRequest, CallRequest, ContinueRequest, DocumentSummaryRequest, EditeReqeust, EmptyRequest, GameAnswerRequest, GetMessageRequest, GetProMessageRequest, ImageAnswerRequest, ImageChatRequest, ImageContextRequest, ImageGenPromptRequest, InstructRequest, JoinKolRoomRequest, JoinRoomRequest, KnowLedgesRequest, PatoIssEditRequest, QueryEmbeddingRequest, RevealAnswerRequest, ShareKnowLedgesRequest, SummaryAndEmbeddingRequest, SvcImageDescriptionRequest
-        }, ChatMessage, PatoInfo, SessionMessages, BATTERY_GRPC_REST_SERVER, BATTERY_GRPC_SERVER_PORT_START
+    get_now_date_str, log, 
 };
 use serde::{Deserialize, Serialize};
 
 use crate::service::{CreateResonse, HotAiResponse, HotTopicResponse, KolListResponse, NameResponse, PatoInfoResponse, RoomCreateResponse, RoomListResponse, SharedKnowledgesResponse, SimpleResponse, SnResponse, TokenResponse, TopicChatHisResponse};
-use crate::{KolInfo, PortalRoomInfo};
+use crate::KolInfo;
+
+use super::{ArchiveMessageRequest, BatteryCallParameters, BecomeKolRequest, CallRequest, ContinueRequest, DocumentSummaryRequest, EditeReqeust, EmptyRequest, GameAnswerRequest, GetMessageRequest, ImageAnswerRequest, ImageChatRequest, ImageGenPromptRequest, InstructRequest, JoinKolRoomRequest, KnowLedgesRequest, QueryEmbeddingRequest, ShareKnowLedgesRequest, SubmitTagsRequest, SummaryAndEmbeddingRequest, SvcImageDescriptionRequest};
 
 #[derive(Deserialize, Debug, Default, Serialize)]
 struct PortalHotAi{
@@ -122,43 +121,35 @@ pub async fn town_register(name: String) -> Result<String, Error> {
     Ok(String::default())
 }
 
+fn prepare_battery_call_args<T: Serialize>(id: String, token: String, sn: i64, method_name: String, arg: T) -> BatteryCallParameters {
+    super::BatteryCallParameters {
+        id,
+        sn,
+        token,
+        method_name,
+        args: serde_json::to_string(&arg).unwrap_or_default(),
+    }
+}
+
 pub async fn do_summary_and_embedding(id: String, link: String, transcript: String, knowledge: String, 
     tanscript_sig: String, knowledge_sig: String, link_sig: String
 ) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let request = SummaryAndEmbeddingRequest {
+        link,
+        knowledge_file: knowledge,
+        transcript_file: transcript,
+        knowledge_file_sig: knowledge_sig,
+        transcript_file_sig: tanscript_sig,
+        link_sig,
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_summary_and_embedding".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(result) => {        }
         Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let request = tonic::Request::new(SummaryAndEmbeddingRequest {
-                link,
-                knowledge_file: knowledge,
-                transcript_file: transcript,
-                knowledge_file_sig: knowledge_sig,
-                transcript_file_sig: tanscript_sig,
-                link_sig,
-            });
-            println!("doc summary request {:?}", request);
-            let _ = client.request_summary_and_embedding(request).await?;
-        }
     }
 
     Ok(())
@@ -239,148 +230,44 @@ pub async fn get_name_by_id(ids: Vec<String>) -> Result<String, Error> {
     }
 }
 
-pub async fn get_pato_iss(id: String) -> Result<String, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(EmptyRequest {});
-            if let Ok(resp) = client.request_pato_iss(req).await{
-                return Ok(resp.get_ref().iss.clone());
-            }
-        }
-    }
-
-    Err(anyhow!("get_pato_iss error"))
-}
-
 pub async fn archive_pato_session(id: String, session: String, date: String) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
+    let request = ArchiveMessageRequest { session, date };
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "archive_chat_messages".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(result) => {        }
         Err(e) => { log!("get_pato_sn error: {}", e); }
     }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(ArchiveMessageRequest { session, date });
-            if client.archive_chat_messages(req).await.is_ok(){
-                return Ok(());
-            }
-        }
-    }
 
-    Err(anyhow!("change_pato_iss error"))
+    Ok(())
 }
-pub async fn edit_pato_iss(id: String, iss: String) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(PatoIssEditRequest { iss });
-            if client.change_pato_iss(req).await.is_ok(){
-                return Ok(());
-            }
-        }
-    }
 
-    Err(anyhow!("change_pato_iss error"))
-}
 pub async fn send_pato_instruct(id: String, command: String, pro: String) -> Result<String, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let mut answer = "我这会儿有点忙～～".to_string();
+    
+    let request = InstructRequest { 
+        message: command, 
+        reply_to: id.clone(),
+        kol: pro,
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_instruct".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
         Err(e) => { log!("get_pato_sn error: {}", e); }
     }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(InstructRequest { 
-                message: command, 
-                reply_to: id,
-                kol: pro,
-            });
-            match client.request_instruct(req).await{
-                Ok(answer) => {
-                    return Ok(answer.get_ref().answer.clone());
-                }
-                Err(e) => {
-                    println!("send_pato_instruct error: {:?}", e);
-                }
-            }
-        }
-    }
 
-    Err(anyhow!("send_pato_instruct error"))
+
+    Ok(answer)
 }
+
 pub async fn create_game_room(id: String, title: String, description: String, town: String) -> Result<Vec<String>, Error> {
     let req = super::RoomCreateRequest {
         owner: id.clone(),
@@ -400,561 +287,179 @@ pub async fn create_game_room(id: String, title: String, description: String, to
 
     Err(anyhow!("request_create_room error"))
 }
-pub async fn join_game(id: String, owner: String, room_id: String, room_name: String, game_level: i32) -> Result<(i32, String), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(JoinRoomRequest { 
-                id,
-                name: room_name,
-                room_id,
-                level: game_level,
-            });
-            match client.request_join_room(req).await{
-                Ok(answer) => {
-                    return Ok((answer.get_ref().scene_count, answer.get_ref().last_scene.clone()));
-                }
-                Err(e) => {
-                    return Err(anyhow!("call request_join_room fail: {}",e));
-                }
-            }
-        }
-    }
-    Err(anyhow!("request_create_room error"))
-}
-pub async fn request_game_clue(id: String, owner: String, message: String, image_url: String) -> Result<Vec<String>, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(ImageChatRequest { 
-                reply_to: owner,
-                message,
-                image_url,
-                room_id: "".to_string(),
-                level: 1,
-            });
-            match client.request_clue_from_image_chat(req).await{
-                Ok(answer) => {
-                    return Ok(vec![answer.get_ref().answer.clone(), answer.get_ref().answer_voice.clone()]);
-                }
-                Err(e) => {
-                    return Err(anyhow!("call request_game_clue fail: {}",e));
-                }
-            }
-        }
-    }
-    Err(anyhow!("request_game_clue error"))
-}
-pub async fn request_game_context(id: String, prompt: String, input: String, image_url: String) -> Result<String, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(ImageContextRequest { 
-                image_url,
-                prompt,
-                input,
-            });
-            match client.request_image_context(req).await{
-                Ok(answer) => {
-                    return Ok(answer.get_ref().context.clone());
-                }
-                Err(e) => {
-                    return Err(anyhow!("call request_game_context fail: {}",e));
-                }
-            }
-        }
-    }
-    Err(anyhow!("request_game_context error"))
-}
 pub async fn request_image_prompt(id: String, description: String, history: String, architecture: String) -> Result<String, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let mut answer = "".to_string();
+    
+    let request = ImageGenPromptRequest { 
+        description,
+        historical: history,
+        architectural: architecture,
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_image_gen_prompt".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
         Err(e) => { log!("get_pato_sn error: {}", e); }
     }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(ImageGenPromptRequest { 
-                description,
-                historical: history,
-                architectural: architecture,
-            });
-            match client.request_image_gen_prompt(req).await{
-                Ok(answer) => {
-                    return Ok(answer.get_ref().context.clone());
-                }
-                Err(e) => {
-                    return Err(anyhow!("call request_image_prompt fail: {}",e));
-                }
-            }
-        }
-    }
-    Err(anyhow!("request_image_prompt error"))
+
+
+    Ok(answer)    
 }
 pub async fn send_answer(id: String, owner: String, room_id: String, room_name: String, answer: String, level: i32) -> Result<Vec<String>, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let mut answers = vec![];
+    
+    let request = GameAnswerRequest { 
+        id: id.clone(),
+        name: room_name,
+        answer,
+        room_id,
+        level,
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "receive_game_answer".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
         Err(e) => { log!("get_pato_sn error: {}", e); }
     }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(GameAnswerRequest { 
-                id,
-                name: room_name,
-                answer,
-                room_id,
-                level,
-            });
-            match client.receive_game_answer(req).await{
-                Ok(resp) => {
-                    return Ok(resp.get_ref().correct_gamers.clone());
-                }
-                Err(e) => {
-                    println!("send_answer error: {:?}", e);
-                    return Err(anyhow!("call send_answer fail: {}",e));
-                }
-            }
-        }
-    }
-    Err(anyhow!("send_answer error"))
-}
-pub async fn accept_answer(owner: String, room_id: String, room_name: String) -> Result<Vec<String>, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![owner.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(EmptyRequest {});
-            match client.accept_game_answer(req).await {
-                Ok(answer) => {
-                    return Ok(answer.get_ref().correct_gamers.clone());
-                }
-                Err(e) => {
-                    return Err(anyhow!("call accept_answer fail: {}",e));
-                }
-            }
-        }
-    }
-    Err(anyhow!("accept_answer error"))
+
+
+    Ok(answers)
 }
 pub async fn chat_with_image(id: String, command: String, pro: String, image_url: String) -> Result<String, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let mut answer = "".to_string();
+    
+    let request = ImageChatRequest { 
+        message: command, 
+        reply_to: id.clone(),
+        image_url,
+        room_id: "".to_string(),
+        level: 1,
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_chat_with_image".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
         Err(e) => { log!("get_pato_sn error: {}", e); }
     }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(ImageChatRequest { 
-                message: command, 
-                reply_to: id,
-                image_url,
-                room_id: "".to_string(),
-                level: 1,
-            });
-            match client.request_chat_with_image(req).await{
-                Ok(answer) => {
-                    let answer_txt = answer.get_ref().answer.clone();
-                    let answer_voice = answer.get_ref().answer_voice.clone();
-                    return Ok(serde_json::to_string(&vec![answer_txt, answer_voice]).unwrap_or_default());
-                }
-                Err(e) => {
-                    println!("send_pato_instruct error: {:?}", e);
-                }
-            }
-        }
-    }
 
-    Err(anyhow!("send_pato_instruct error"))
-}
-pub async fn reveal_answer(id: String, room_id: String, level: i32, owner: String) -> Result<String, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![owner.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(RevealAnswerRequest { 
-                room_id,
-                level,
-                id,
-                owner,
-            });
-            match client.request_reveal_answer(req).await{
-                Ok(answer) => {
-                    return Ok(answer.get_ref().answer.clone());
-                }
-                Err(e) => {
-                    println!("send_pato_instruct error: {:?}", e);
-                }
-            }
-        }
-    }
 
-    Err(anyhow!("send_pato_instruct error"))
+    Ok(answer)
 }
 pub async fn answer_image(id: String, image_url: String, room_id: String, level: i32, input: String, prompt: String) -> Result<String, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let mut answer = "这幅画有点深奥啊。。。".to_string();
+    
+    let request = ImageAnswerRequest { 
+        image_url,
+        room_id,
+        level,
+        input,
+        prompt,
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_answer_image".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
         Err(e) => { log!("get_pato_sn error: {}", e); }
     }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(ImageAnswerRequest { 
-                image_url,
-                room_id,
-                level,
-                input,
-                prompt,
-            });
-            match client.request_answer_image(req).await{
-                Ok(answer) => {
-                    return Ok(answer.get_ref().context.clone());
-                }
-                Err(e) => {
-                    println!("send_pato_instruct error: {:?}", e);
-                }
-            }
-        }
-    }
 
-    Err(anyhow!("send_pato_instruct error"))
+
+    Ok(answer)    
 }
 pub async fn image_description(id: String, demo_image_file: String) -> Result<String, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let mut answer = "这幅画有点深奥啊。。。".to_string();
+    
+    let request = SvcImageDescriptionRequest {
+        image_url: demo_image_file.clone(),
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0{
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(SvcImageDescriptionRequest {
-                image_url: demo_image_file.clone(),
-            });
-            match client.request_image_description(req).await{
-                Ok(resp) => {
-                    return Ok(resp.get_ref().description.clone() + "##" + &demo_image_file);
-                }
-                Err(e) => {
-                    println!("generate_scene error: {:?}", e);
-                }
-            }
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_image_description".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
-    Err(anyhow!("generate_scene error"))
+
+    Ok(answer)        
 }
 pub async fn call_pato(id: String, callid: String, topic: String) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(CallRequest { id: callid, topic });
-            if client.request_pato_call(req).await.is_ok(){
-                return Ok(());
-            }
-        }
+    let request = CallRequest { id: callid, topic };
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_pato_call".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
-    Err(anyhow!("call pato error"))
+    Ok(())    
 }
 pub async fn get_pato_chat_messages(id: String, date: String) -> Result<Vec<SessionMessages>, Error> {
     let mut messages: Vec<SessionMessages> = vec![];
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(GetMessageRequest { id, date });
-            // println!("get_pato_chat_messages: {:?}", req);
-            if let Ok(resp) = client.get_chat_messages(req).await{
-                let messages_json_str = resp.get_ref().content.clone();
-                // println!("get_pato_chat_messages: {:?}", messages_json_str);
-                messages = serde_json::from_str(&messages_json_str).unwrap_or_default();
-            }
-        }
+
+    let request = GetMessageRequest { id: id.clone(), date };
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "get_chat_messages".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(messages)
 }
 pub async fn edit_pato_chat_messages(id: String, kol: String, messages: Vec<ChatMessage>) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let messages_str = serde_json::to_string(&messages).unwrap_or_default();
-            let req = tonic::Request::new(EditeReqeust { initial: id, kol, messages: messages_str });
-            if let Err(e) = client.request_edit_messages(req).await{
-                println!("edit messages error: {}", e);
-            }
-        }
+    let messages_str = serde_json::to_string(&messages).unwrap_or_default();
+    let request = EditeReqeust { initial: id.clone(), kol, messages: messages_str };
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_edit_messages".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(())
 }
 pub async fn continue_pato_chat(id: String, date: String, session: String, continued: bool) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(ContinueRequest { date, session, continued });
-            // println!("get_pato_chat_messages: {:?}", req);
-            if let Err(e) = client.request_continue_chat(req).await{
-                println!("continue chat error: {}", e);
-            }
-        }
+    let request = ContinueRequest { date, session, continued };
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_continue_chat".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(())
@@ -1003,113 +508,34 @@ pub async fn get_topic_chat_history(id: String, topic: String, town: String) -> 
 
     Err(anyhow!("request_topic_chat_history error"))
 }
-pub async fn get_pro_chat_messages(id: String, proid:String, date: String) -> Result<Vec<ChatMessage>, Error> {
-    let mut messages: Vec<ChatMessage> = vec![];
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(GetProMessageRequest { id, date, proid});
-            // println!("get_pato_chat_messages: {:?}", req);
-            if let Ok(resp) = client.get_pro_chat_messages(req).await{
-                let messages_json_str = resp.get_ref().content.clone();
-                // println!("get_pro_chat_messages: {:?}", messages_json_str);
-                messages = serde_json::from_str(&messages_json_str).unwrap_or_default();
-            }
-        }
-    }
-
-    Ok(messages)
-}
 pub async fn get_pro_knowledges(id: String) -> Result<String, Error> {
     let mut messages: Vec<PortalKnowledge> = vec![];
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(KnowLedgesRequest { id: id.clone() });
-            if let Ok(resp) = client.request_pato_knowledges(req).await{
-                for knowledge in resp.get_ref().knowledge_info.clone(){
-                    let info = PortalKnowledge{
-                        sig: knowledge.sig.clone(),
-                        title: knowledge.title.clone(),
-                        owner: knowledge.owner.clone(),
-                        summary: knowledge.summary.clone(),
-                    };
-                    messages.push(info);
-                }
-            }
-        }
+
+    let request = KnowLedgesRequest { id: id.clone() };
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_pato_knowledges".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(serde_json::to_string(&messages).unwrap_or_default())
 }
 pub async fn pato_self_talk(id: String) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(EmptyRequest {});
-            if let Ok(resp) = client.request_self_talk_for_today_plan(req).await{
-            }
-        }
+    let request = EmptyRequest {};
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_self_talk_for_today_plan".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(())
@@ -1123,116 +549,58 @@ pub fn get_predefined_tags() -> Result<String, Error> {
     Ok(content)
 }
 pub async fn submit_tags(id: String, tags: Vec<String>) -> Result<String, Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let avatar = String::default();
+    let request = SubmitTagsRequest {
+        tags, 
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(SubmitTagsRequest {
-                tags, 
-            });
-            match client.request_submit_tags(req).await{
-                Ok(resp) => {
-                    return Ok(resp.get_ref().avatar.clone());
-                }
-                Err(e) =>{
-                    return Err(anyhow!("submit tags is something wrong with {}",e));
-                }
-            }
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_submit_tags".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
-    Err(anyhow!("submit tags is something wrong with"))
+    Ok(avatar)
 }
 
 pub async fn share_pro_knowledge(id: String, sig: String, title: String, shared: bool) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let request = ShareKnowLedgesRequest {
+        sig,
+        title,
+        owner: id.clone(), 
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(ShareKnowLedgesRequest {
-                sig,
-                title,
-                owner: id, 
-            });
-            if let Err(e) = client.request_share_knowledge(req).await{
-                log!("share knowledge error: {}", e);
-            }
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_share_knowledge".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(())
 }
 pub async fn add_shared_knowledge(id: String, sig: String, title: String, owner: String) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+    let request = ShareKnowLedgesRequest {
+        sig,
+        title,
+        owner,
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(ShareKnowLedgesRequest {
-                sig,
-                title,
-                owner, 
-            });
-            if let Err(e) = client.add_shared_knowledge(req).await{
-                log!("add_shared_knowledge error: {}", e);
-            }
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "add_shared_knowledge".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(())
@@ -1267,30 +635,6 @@ pub async fn query_pato_auth_token(token: String) -> Result<(String, String), Er
 
     Ok((id, name))
 }
-pub async fn query_game_rooms(town: String) -> Result<String, Error> {
-    let mut rooms: Vec<PortalRoomInfo> = vec![];
-    let req = super::SimpleRequest { id: town};
-    match call_update_method(AGENT_SMITH_CANISTER, "request_room_list", req).await{
-        Ok(result) => {
-            let resp = Decode!(result.as_slice(), RoomListResponse).unwrap_or_default();
-
-            for response in resp.rooms.iter(){
-                let info = PortalRoomInfo{
-                    room_id: response.room_id.clone(),
-                    owner: response.owner.clone(),
-                    title: response.title.clone(),
-                    description: response.description.clone(),
-                    town: response.town.clone(),
-                    cover: response.cover.clone(),
-                };
-                rooms.push(info);
-            }
-        }
-        Err(e) => { log!("request_room_list error: {}", e); }
-    }
-
-    Ok(serde_json::to_string(&rooms).unwrap_or_default())
-}
 pub async fn query_kol_rooms() -> Result<String, Error> {
     let mut rooms: Vec<KolInfo> = vec![];
     let req = super::EmptyRequest {    };
@@ -1319,139 +663,69 @@ pub async fn query_kol_rooms() -> Result<String, Error> {
     Ok(serde_json::to_string(&rooms).unwrap_or_default())
 }
 pub async fn become_kol(id: String) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![id.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(BecomeKolRequest { key: String::default() });
-            println!("become_kol: {:?}", req);
-            if let Err(e) = client.become_kol(req).await{
-                println!("become_kol error: {}", e);
-            }
-        }
+    let request = BecomeKolRequest { key: String::default() };
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "become_kol".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(())
 }
 pub async fn follow_kol(kol: String, follower: String) -> Result<(), Error> {
-    let mut sn: i64 = -1;
-    let req = super::SnRequest {
-        id: vec![follower.clone()],
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(JoinKolRoomRequest { key: String::default(), kol, follower });
-            println!("request_join_kol_room: {:?}", req);
-            if let Err(e) = client.request_join_kol_room(req).await{
-                println!("request_join_kol_room error: {}", e);
-            }
-        }
+    let request = JoinKolRoomRequest { key: String::default(), kol: kol.clone(), follower };
+
+    let req = prepare_battery_call_args(
+        kol, "".to_string(), -1, 
+        "request_join_kol_room".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(())
 }
 pub async fn query_document_embeddings(id: String, sig: String, query: String) -> Result<String, Error>{
-    let mut sn: i64 = -1;
     let mut query_result = String::new();
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+
+    let request = QueryEmbeddingRequest { 
+        query, collection_name: sig 
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(QueryEmbeddingRequest { 
-                query, collection_name: sig 
-            });
-            let query_resp = client.request_query_embedding(req).await?;
-            query_result = query_resp.get_ref().result.clone();
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_query_embedding".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(query_result)
 }
 pub async fn query_document_summary(id: String, sig: String) -> Result<String, Error>{
-    let mut sn: i64 = -1;
     let mut query_result = String::new();
-    let req = super::SnRequest {
-        id: vec![id.clone()],
+
+    let request = DocumentSummaryRequest { 
+        document: sig,
     };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_sn", req).await{
-        Ok(result) => {
-            let response = Decode!(result.as_slice(), SnResponse).unwrap_or_default();
-            let resp = response.pato_sn_id;
-            if !resp.is_empty(){
-                sn = resp[0].sn.parse::<i64>().unwrap_or(-1);
-            }else{
-                println!("get_pato_sn: not found this one");
-            }
-        }
-        Err(e) => { log!("get_pato_sn error: {}", e); }
-    }
-    if sn >= 0 {
-        let battery_address = format!(
-            "{}:{}",
-            BATTERY_GRPC_REST_SERVER,
-            sn + BATTERY_GRPC_SERVER_PORT_START
-        );
-        if let Ok(mut client) = MetaPowerMatrixBatterySvcClient::connect(battery_address).await {
-            let req = tonic::Request::new(DocumentSummaryRequest { 
-                document: sig,
-            });
-            let summary_resp = client.request_document_summary(req).await?;
-            query_result = summary_resp.get_ref().summary.clone();
-        }
+
+    let req = prepare_battery_call_args(
+        id, "".to_string(), -1, 
+        "request_document_summary".to_string(), request
+    );
+
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await{
+        Ok(answer) => {        }
+        Err(e) => { log!("request_image_description error: {}", e); }
     }
 
     Ok(query_result)

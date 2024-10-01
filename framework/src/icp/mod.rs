@@ -7,8 +7,9 @@ use serde::Deserialize;
 
 pub const ENDPOINT_URL: &str = "http://localhost:8000/";
 pub const PEM_FILE: &str = "identity.pem";
-pub const AGENT_SMITH_CANISTER: &str = "rwlgt-iiaaa-aaaaa-aaaaa-cai";
-pub const NAIS_MATRIX_CANISTER: &str = "rwlgt-iiaaa-aaaaa-aaaaa-cai";
+pub const AGENT_SMITH_CANISTER: &str = "ekkds-diaaa-aaaak-ak5kq-cai";
+pub const NAIS_MATRIX_CANISTER: &str = "fvcqf-aqaaa-aaaak-ak5oa-cai";
+pub const AGENT_BATTERY_CANISTER: &str = "fvcqf-aqaaa-aaaak-ak5oa-cai";
 
 #[derive(Deserialize, CandidType)]
 pub struct SnIdPaire {
@@ -59,9 +60,9 @@ pub struct NameRequest {
 
 async fn init_icp_agent() -> Result<Agent, AgentError>{
     let agent = Agent::builder()
-    .with_url(ENDPOINT_URL)
-    .with_identity(create_identity(None))
-    .build()?;
+        .with_url(ENDPOINT_URL)
+        .with_identity(create_identity(None))
+        .build()?;
 
     agent.fetch_root_key().await?;
 
@@ -91,6 +92,17 @@ pub async fn call_update_method<T: CandidType>(canister_called: &str, method_nam
     let effective_canister_id = Principal::from_text(canister_called).unwrap();
 
     agent.update(&effective_canister_id, method_name)
+      .with_effective_canister_id(effective_canister_id)
+      .with_arg(Encode!(&params)?)
+      .await
+}
+
+pub async fn call_query_method<T: CandidType>(canister_called: &str, method_name: &str, params: T) -> Result<Vec<u8>, AgentError>
+{
+    let agent = init_icp_agent().await?;
+    let effective_canister_id = Principal::from_text(canister_called).unwrap();
+
+    agent.query(&effective_canister_id, method_name)
       .with_effective_canister_id(effective_canister_id)
       .with_arg(Encode!(&params)?)
       .await

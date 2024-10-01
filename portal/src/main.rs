@@ -13,16 +13,15 @@ use actix_web::{
 use futures::StreamExt;
 use futures::TryStreamExt;
 use metapower_framework::{
-    dao::personality::Persona, get_now_secs_str_zh, ChatMessage, DataResponse, AI_AGENT_DIR,
+    get_now_secs_str_zh, ChatMessage, DataResponse, AI_AGENT_DIR,
     AI_PATO_DIR, XFILES_SERVER,
 };
 use serde::{Deserialize, Serialize};
 use service::ai_town::{
     add_shared_knowledge, become_kol, call_pato, continue_pato_chat, do_summary_and_embedding,
     edit_pato_chat_messages, follow_kol, gen_pato_auth_token, get_name_by_id,
-    get_pato_chat_messages, get_pato_info, get_pato_iss, get_predefined_tags,
-    get_pro_chat_messages, get_pro_knowledges, get_topic_chat_history, pato_self_talk,
-    query_document_summary, query_game_rooms, query_kol_rooms, query_pato_auth_token,
+    get_pato_chat_messages, get_pato_info, get_predefined_tags, get_pro_knowledges, get_topic_chat_history, pato_self_talk,
+    query_document_summary, query_kol_rooms, query_pato_auth_token,
     retrieve_pato_by_name, share_pro_knowledge, shared_knowledges, submit_tags, topic_chat,
     town_hot_topics, town_hots, town_login,
 };
@@ -64,13 +63,6 @@ struct ShareKnowledgeInfo {
 }
 
 #[derive(Deserialize, Debug)]
-struct GoTownInfo {
-    id: String,
-    town: String,
-    topic: String,
-}
-
-#[derive(Deserialize, Debug)]
 struct UserInfo {
     name: String,
     gender: u8,
@@ -105,33 +97,12 @@ struct PortalRoomInfo {
 }
 
 #[derive(Deserialize, Debug, Serialize)]
-struct PortalLiveRoomInfo {
-    room_id: String,
-    owner: String,
-    roles: Vec<String>,
-    title: String,
-    description: String,
-    cover: String,
-    town: String,
-    avatar: String,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-struct GameContextInfo {
-    id: String,
-    image_url: String,
-    input: String,
-    prompt: String,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
 struct ImagePromptRequest {
     id: String,
     description: String,
     history: String,
     architecture: String,
 }
-
 #[derive(Deserialize, Debug, Serialize)]
 struct GenImageAnswerInfo {
     room_id: String,
@@ -140,23 +111,6 @@ struct GenImageAnswerInfo {
     input: String,
     image_url: String,
     prompt: String,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-struct GameActionInfo {
-    room_id: String,
-    level: i32,
-    owner: String,
-    #[serde(default)]
-    room_name: String,
-    #[serde(default)]
-    id: String,
-    #[serde(default)]
-    message: String,
-    #[serde(default)]
-    image_url: String,
-    #[serde(default)]
-    answer: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -174,13 +128,6 @@ struct CallInfo {
 }
 
 #[derive(Deserialize, Debug, Default)]
-struct TravelSceneInfo {
-    id: String,
-    room_id: String,
-    description: String,
-}
-
-#[derive(Deserialize, Debug, Default)]
 struct DescribeSceneInfo {
     id: String,
     room_id: String,
@@ -192,12 +139,6 @@ struct UserActive {
     id: String,
     page: String,
     action: String,
-}
-
-#[derive(Deserialize, Debug, Default, Serialize)]
-pub struct LiveOpenResponse {
-    pub room_id: String,
-    pub cover: String,
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -241,6 +182,13 @@ struct KnowledgeInfo {
 #[derive(Deserialize)]
 pub struct PathInfo {
     absolute_path: String,
+}
+
+#[derive(Deserialize, Debug, Default)]
+struct TravelSceneInfo {
+    pub id: String,
+    pub room_id: String,
+    pub description: String,
 }
 
 #[actix_web::main]
@@ -759,48 +707,6 @@ async fn portal_log_user_active(
 
     Ok(web::Json(resp))
 }
-async fn portal_get_pato_iss(id: web::Path<String>) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    let id = id.into_inner();
-
-    match get_pato_iss(id).await {
-        Ok(iss) => {
-            resp.content = iss;
-        }
-        Err(e) => {
-            println!("error: {}", e);
-            resp.code = String::from("500");
-        }
-    }
-
-    Ok(web::Json(resp))
-}
-async fn portal_edit_pato_iss(
-    form: web::Json<Persona>,
-    id: web::Path<String>,
-) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    let id = id.into_inner();
-    let iss = form.into_inner();
-    println!("persona: {:?}", iss);
-
-    if let Err(e) =
-        service::ai_town::edit_pato_iss(id, serde_json::to_string(&iss).unwrap_or_default()).await
-    {
-        println!("error: {}", e);
-        resp.code = String::from("500");
-    }
-
-    Ok(web::Json(resp))
-}
 async fn portal_query_embeddings(data: web::Json<EmbedInfo>) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
@@ -870,93 +776,6 @@ async fn portal_create_game_room(
 
     Ok(web::Json(resp))
 }
-async fn portal_join_game(data: web::Json<GameActionInfo>) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    let action = data.into_inner();
-    println!("room: {:?}", action);
-
-    match service::ai_town::join_game(
-        action.id,
-        action.owner,
-        action.room_id,
-        action.room_name,
-        action.level,
-    )
-    .await
-    {
-        Ok(last_scene) => {
-            resp.content = serde_json::to_string(&last_scene).unwrap_or_default();
-        }
-        Err(e) => {
-            println!("error: {}", e);
-            resp.code = String::from("500");
-        }
-    }
-
-    Ok(web::Json(resp))
-}
-async fn portal_ask_for_clue(data: web::Json<GameActionInfo>) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    let action = data.into_inner();
-    println!("room: {:?}", action);
-
-    match service::ai_town::request_game_clue(
-        action.id,
-        action.owner,
-        action.message,
-        action.image_url,
-    )
-    .await
-    {
-        Ok(clues) => {
-            resp.content = serde_json::to_string(&clues).unwrap_or_default();
-        }
-        Err(e) => {
-            println!("error: {}", e);
-            resp.code = String::from("500");
-        }
-    }
-
-    Ok(web::Json(resp))
-}
-async fn portal_ask_for_context(
-    data: web::Json<GameContextInfo>,
-) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    let action = data.into_inner();
-    println!("room: {:?}", action);
-
-    match service::ai_town::request_game_context(
-        action.id,
-        action.prompt,
-        action.input,
-        action.image_url,
-    )
-    .await
-    {
-        Ok(context) => {
-            resp.content = context;
-        }
-        Err(e) => {
-            println!("error: {}", e);
-            resp.code = String::from("500");
-        }
-    }
-
-    Ok(web::Json(resp))
-}
 async fn portal_ask_for_image_prompt(
     data: web::Json<ImagePromptRequest>,
 ) -> actix_web::Result<impl Responder> {
@@ -978,59 +797,6 @@ async fn portal_ask_for_image_prompt(
     {
         Ok(context) => {
             resp.content = context;
-        }
-        Err(e) => {
-            println!("error: {}", e);
-            resp.code = String::from("500");
-        }
-    }
-
-    Ok(web::Json(resp))
-}
-async fn portal_send_answer(data: web::Json<GameActionInfo>) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    let action = data.into_inner();
-    println!("room: {:?}", action);
-
-    match service::ai_town::send_answer(
-        action.id,
-        action.owner,
-        action.room_id,
-        action.room_name,
-        action.answer,
-        action.level,
-    )
-    .await
-    {
-        Ok(clues) => {
-            resp.content = serde_json::to_string(&clues).unwrap_or_default();
-        }
-        Err(e) => {
-            println!("error: {}", e);
-            resp.code = String::from("500");
-        }
-    }
-
-    Ok(web::Json(resp))
-}
-async fn portal_accept_answer(
-    data: web::Json<GameActionInfo>,
-) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    let action = data.into_inner();
-    println!("room: {:?}", action);
-
-    match service::ai_town::accept_answer(action.id, action.owner, action.room_id).await {
-        Ok(clues) => {
-            resp.content = serde_json::to_string(&clues).unwrap_or_default();
         }
         Err(e) => {
             println!("error: {}", e);
@@ -1102,31 +868,6 @@ async fn portal_answer_image(
 
     Ok(web::Json(resp))
 }
-async fn portal_reveal_answer(
-    data: web::Json<GameActionInfo>,
-) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    let command = data.into_inner();
-    println!("reveal answer: {:?}", command);
-
-    match service::ai_town::reveal_answer(command.id, command.room_id, command.level, command.owner)
-        .await
-    {
-        Ok(answer) => {
-            resp.content = answer;
-        }
-        Err(e) => {
-            println!("error: {}", e);
-            resp.code = String::from("500");
-        }
-    }
-
-    Ok(web::Json(resp))
-}
 async fn portal_archive_pato_session(
     form: web::Json<ArchiveInfo>,
 ) -> actix_web::Result<impl Responder> {
@@ -1176,24 +917,6 @@ async fn portal_query_pato_auth_token(
     match query_pato_auth_token(token.into_inner()).await {
         Ok(token) => {
             resp.content = token.0 + "," + &token.1;
-        }
-        Err(e) => {
-            println!("error: {}", e);
-            resp.code = String::from("500");
-        }
-    }
-
-    Ok(web::Json(resp))
-}
-async fn portal_query_game_rooms(town: web::Path<String>) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    match query_game_rooms(town.into_inner()).await {
-        Ok(room_jsonstr) => {
-            resp.content = room_jsonstr;
         }
         Err(e) => {
             println!("error: {}", e);
@@ -1364,32 +1087,6 @@ async fn portal_chat_with_topic_history(
 
     Ok(web::Json(resp))
 }
-async fn portal_get_pro_chat_messages(
-    id: web::Path<(String, String, String)>,
-) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
-        content: String::from(""),
-        code: String::from("200"),
-    };
-
-    let (id, proid, date) = id.into_inner();
-
-    match get_pro_chat_messages(id, proid, date).await {
-        Ok(info) => {
-            resp.content = serde_json::to_string(&info).unwrap_or_else(|e| {
-                println!("error: {}", e);
-                resp.code = String::from("500");
-                "".to_string()
-            });
-        }
-        Err(e) => {
-            println!("error: {}", e);
-            resp.code = String::from("500");
-        }
-    }
-
-    Ok(web::Json(resp))
-}
 async fn portal_get_pro_knowledge(id: web::Path<String>) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
@@ -1534,10 +1231,6 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                 web::resource("game/answer/image")
                                     .route(web::post().to(portal_answer_image)),
                             )
-                            .service(
-                                web::resource("game/reveal/answer")
-                                    .route(web::post().to(portal_reveal_answer)),
-                            )
                             .service(web::resource("hots").route(web::get().to(portal_town_hots)))
                             .service(
                                 web::resource("hot/topics")
@@ -1546,29 +1239,6 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                             .service(
                                 web::resource("create/game")
                                     .route(web::post().to(portal_create_game_room)),
-                            )
-                            .service(
-                                web::resource("join/game").route(web::post().to(portal_join_game)),
-                            )
-                            .service(
-                                web::resource("game/rooms/{town}")
-                                    .route(web::get().to(portal_query_game_rooms)),
-                            )
-                            .service(
-                                web::resource("game/clue")
-                                    .route(web::post().to(portal_ask_for_clue)),
-                            )
-                            .service(
-                                web::resource("game/scene/context")
-                                    .route(web::post().to(portal_ask_for_context)),
-                            )
-                            .service(
-                                web::resource("game/send/answer")
-                                    .route(web::post().to(portal_send_answer)),
-                            )
-                            .service(
-                                web::resource("game/accept/answer")
-                                    .route(web::post().to(portal_accept_answer)),
                             )
                             .service(
                                 web::resource("become/kol/{id}")
@@ -1593,15 +1263,8 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                     .route(web::post().to(portal_submit_tags)),
                             )
                             .service(
-                                web::resource("iss/edit/{id}")
-                                    .route(web::post().to(portal_edit_pato_iss)),
-                            )
-                            .service(
                                 web::resource("info/{id}")
                                     .route(web::get().to(portal_get_pato_info)),
-                            )
-                            .service(
-                                web::resource("iss/{id}").route(web::get().to(portal_get_pato_iss)),
                             )
                             .service(
                                 web::resource("messages/{id}/{date}")
@@ -1610,10 +1273,6 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                             .service(
                                 web::resource("archive")
                                     .route(web::post().to(portal_archive_pato_session)),
-                            )
-                            .service(
-                                web::resource("pro/messages/{id}/{proid}/{date}")
-                                    .route(web::get().to(portal_get_pro_chat_messages)),
                             )
                             .service(
                                 web::resource("instruct")
