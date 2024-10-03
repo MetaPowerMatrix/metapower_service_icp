@@ -82,7 +82,7 @@ pub struct CreateRequest {
     pub name: String,
 }
 
-#[derive(Deserialize, CandidType, Default)]
+#[derive(Deserialize, CandidType, Default, Debug)]
 pub struct CreateResonse {
     pub id: String,
 }
