@@ -111,6 +111,7 @@ pub async fn shared_knowledges() -> String{
 pub async fn town_register(name: String) -> Result<String, Error> {
     match call_update_method(NAIS_MATRIX_CANISTER, "request_create_pato", name).await{
         Ok(result) => {
+            println!("request_create_pato response: {:?}", result);
             let response = Decode!(result.as_slice(), CreateResonse).unwrap_or_default();
             return Ok(response.id);
         }
