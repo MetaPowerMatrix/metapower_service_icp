@@ -16,3 +16,21 @@ export RUSTFLAGS=$RUSTFLAGS' -C target-feature=+simd128'
 bin//mosquitto_pub -h localhost -p 3881 -t '/metapower/text/done/FDCBDEA1-BDC7-4443-B201-9D87B3FC4C65' -i 'MetaPowerAssistantAgent'  -m 'chat/download/'
 
 ./arduino-fwuploader firmware flash -i ../NINA_W102-v1.5.0-Nano-RP2040-Connect.bin  -b arduino:samd:nano_33_iot -a /dev/cu.usbmodem2101
+
+dfx deploy matrix --network ic
+dfx deploy agent --network ic
+dfx cycles balance --network ic
+dfx ledger balance --network ic
+dfx canister logs matrix --network ic
+dfx identity list
+dfx identity get-principal
+dfx cycles convert --amount 1.29 --network ic
+dfx canister create agent --network ic
+dfx identity whoami --network ic
+dfx ledger account-id --network ic
+dfx identity use metapowermatrix
+dfx identity new metapowermatrix
+dfx canister call agent hi
+dfx canister call matrix initialize 'architecture'
+candid-extractor target/wasm32-unknown-unknown/release/agent_canister_opt.wasm > src/agent/agent_canister.did
+candid-extractor target/wasm32-unknown-unknown/release/matrix_canister_opt.wasm > src/matrix/matrix_canister.did

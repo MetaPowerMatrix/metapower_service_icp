@@ -5,6 +5,7 @@ use ic_agent::{identity::BasicIdentity, Agent, AgentError, Identity};
 use ring::signature::Ed25519KeyPair;
 use serde::Deserialize;
 
+const DEFAULT_IC_GATEWAY: &str = "https://ic0.app/";
 pub const ENDPOINT_URL: &str = "http://localhost:8000/";
 pub const PEM_FILE: &str = "identity.pem";
 pub const AGENT_SMITH_CANISTER: &str = "ekkds-diaaa-aaaak-ak5kq-cai";
@@ -60,7 +61,7 @@ pub struct NameRequest {
 
 async fn init_icp_agent() -> Result<Agent, AgentError>{
     let agent = Agent::builder()
-        .with_url(ENDPOINT_URL)
+        .with_url(DEFAULT_IC_GATEWAY)
         .with_identity(create_identity(None))
         .build()?;
 
