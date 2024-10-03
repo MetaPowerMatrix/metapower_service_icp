@@ -5,7 +5,7 @@ use std::time::SystemTime;
 use std::env;
 use anyhow::{anyhow, Error};
 use candid::Decode;
-use metapower_framework::icp::{call_update_method, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER, NAIS_MATRIX_CANISTER};
+use metapower_framework::icp::{call_query_method, call_update_method, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER, NAIS_MATRIX_CANISTER};
 use metapower_framework::{ChatMessage, PatoInfo, SessionMessages, AI_MATRIX_DIR, XFILES_LOCAL_DIR, XFILES_SERVER};
 use metapower_framework::{
     get_now_date_str, log, 
@@ -111,7 +111,6 @@ pub async fn shared_knowledges() -> String{
 pub async fn town_register(name: String) -> Result<String, Error> {
     match call_update_method(NAIS_MATRIX_CANISTER, "request_create_pato", name).await{
         Ok(result) => {
-            println!("request_create_pato raw response: {:?}", result);
             let response = Decode!(result.as_slice(), CreateResonse).unwrap_or_default();
             println!("request_create_pato response: {:?}", response);
             return Ok(response.id);
@@ -157,10 +156,7 @@ pub async fn do_summary_and_embedding(id: String, link: String, transcript: Stri
 }
 
 pub async fn get_pato_info(id: String) -> Result<PatoInfo, Error> {
-    let req = super::SimpleRequest {
-        id,
-    };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_pato_info", req).await{
+    match call_query_method(AGENT_SMITH_CANISTER, "request_pato_info", id).await{
         Ok(result) => {
             let response = Decode!(result.as_slice(), PatoInfoResponse).unwrap_or_default();
 
