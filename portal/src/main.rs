@@ -17,14 +17,14 @@ use metapower_framework::{
     AI_PATO_DIR, XFILES_SERVER,
 };
 use serde::{Deserialize, Serialize};
-use service::ai_town::{
+use service::{ai_town::{
     add_shared_knowledge, become_kol, call_pato, continue_pato_chat, do_summary_and_embedding,
     edit_pato_chat_messages, follow_kol, gen_pato_auth_token, get_name_by_id,
     get_pato_chat_messages, get_pato_info, get_predefined_tags, get_pro_knowledges, get_topic_chat_history, pato_self_talk,
     query_document_summary, query_kol_rooms, query_pato_auth_token,
     retrieve_pato_by_name, share_pro_knowledge, shared_knowledges, submit_tags, topic_chat,
     town_hot_topics, town_hots, town_login,
-};
+}, bsc_proxy::proxy_contract_call_query_kol_staking};
 use sha1::Digest;
 use std::{
     fs::OpenOptions,
@@ -271,6 +271,26 @@ async fn portal_become_kol(info: web::Path<String>) -> actix_web::Result<impl Re
     if let Err(e) = become_kol(id).await {
         println!("error: {}", e);
         resp.code = String::from("500");
+    }
+
+    Ok(web::Json(resp))
+}
+async fn portal_query_kol_staking(info: web::Path<String>) -> actix_web::Result<impl Responder> {
+    let mut resp = DataResponse {
+        content: "0".to_string(),
+        code: String::from("404"),
+    };
+
+    let id = info.into_inner();
+
+    match proxy_contract_call_query_kol_staking(id).await {
+        Ok(staking) => {
+            resp.content = staking.to_string();
+            resp.code = String::from("200");
+        }
+        Err(e) => {
+            println!("error: {}", e);
+        }
     }
 
     Ok(web::Json(resp))
@@ -1214,7 +1234,7 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                         web::resource("user/active").route(web::post().to(portal_log_user_active)),
                     ))
                     .service(
-                        web::scope("town")
+                        web::scope("kol")
                             .service(
                                 web::resource("image/description")
                                     .route(web::post().to(portal_image_description)),
@@ -1243,6 +1263,10 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                             .service(
                                 web::resource("become/kol/{id}")
                                     .route(web::get().to(portal_become_kol)),
+                            )
+                            .service(
+                                web::resource("query/staking/{id}")
+                                    .route(web::get().to(portal_query_kol_staking)),
                             )
                             .service(
                                 web::resource("follow/kol/{follower}/{kol}")
