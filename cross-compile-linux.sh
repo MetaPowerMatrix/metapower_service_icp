@@ -32,6 +32,8 @@ dfx identity use metapowermatrix
 dfx identity new metapowermatrix
 dfx canister call agent hi
 dfx canister call matrix initialize 'architecture'
+dfx canister create battery --network ic --subnet brlsh-zidhj-3yy3e-6vqbz-7xnih-xeq2l-as5oc-g32c4-i5pdn-2wwof-oae
+
 candid-extractor target/wasm32-unknown-unknown/release/agent_canister_opt.wasm > src/agent/agent_canister.did
 candid-extractor target/wasm32-unknown-unknown/release/matrix_canister_opt.wasm > src/matrix/matrix_canister.did
-candid-extractor target/wasm32-unknown-unknown/release/pato_canister_opt.wasm > src/battery/pato_canister.did
+candid-extractor target/wasm32-unknown-unknown/release/battery_canister_opt.wasm > src/battery/battery_canister.did
