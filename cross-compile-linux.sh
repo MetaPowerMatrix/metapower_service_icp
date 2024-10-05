@@ -34,3 +34,4 @@ dfx canister call agent hi
 dfx canister call matrix initialize 'architecture'
 candid-extractor target/wasm32-unknown-unknown/release/agent_canister_opt.wasm > src/agent/agent_canister.did
 candid-extractor target/wasm32-unknown-unknown/release/matrix_canister_opt.wasm > src/matrix/matrix_canister.did
+candid-extractor target/wasm32-unknown-unknown/release/pato_canister_opt.wasm > src/battery/pato_canister.did
