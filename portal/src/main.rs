@@ -24,7 +24,7 @@ use service::{ai_town::{
     query_document_summary, query_kol_rooms, query_pato_auth_token,
     retrieve_pato_by_name, share_pro_knowledge, shared_knowledges, submit_tags, topic_chat,
     town_hot_topics, town_hots, town_login,
-}, bsc_proxy::proxy_contract_call_query_kol_staking};
+}, bsc_proxy::{monitor_pab_transfer_event, proxy_contract_call_query_kol_staking}};
 use sha1::Digest;
 use std::{
     fs::OpenOptions,
@@ -193,6 +193,11 @@ struct TravelSceneInfo {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    println!("monitor event staking");
+    tokio::spawn({
+        monitor_pab_transfer_event()
+    });
+
     println!("metapower portal rest api @ 8030");
     HttpServer::new(|| {
         App::new()
