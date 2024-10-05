@@ -38,10 +38,18 @@ struct PortalKnowledge{
     summary: String,
 }
 
-pub async fn town_login(id: String) -> Result<(), Error> {
-    let req = crate::service::LoginRequest { id };
+fn prepare_battery_call_args<T: Serialize>(id: String, token: String, sn: i64, method_name: String, arg: T) -> (String, String, i64, String, String) {
+    (
+        id,
+        token,
+        sn,
+        method_name,
+        serde_json::to_string(&arg).unwrap_or_default(),
+    )
+}
 
-    match call_update_method(NAIS_MATRIX_CANISTER, "request_pato_login", req).await{
+pub async fn town_login(id: String) -> Result<(), Error> {
+    match call_update_method(NAIS_MATRIX_CANISTER, "request_pato_login", id).await{
         Ok(_) => {
             log!("login success");
         }
@@ -119,16 +127,6 @@ pub async fn town_register(name: String) -> Result<String, Error> {
     }
 
     Ok(String::default())
-}
-
-fn prepare_battery_call_args<T: Serialize>(id: String, token: String, sn: i64, method_name: String, arg: T) -> BatteryCallParameters {
-    super::BatteryCallParameters {
-        id,
-        sn,
-        token,
-        method_name,
-        args: serde_json::to_string(&arg).unwrap_or_default(),
-    }
 }
 
 pub async fn do_summary_and_embedding(id: String, link: String, transcript: String, knowledge: String, 
@@ -660,7 +658,7 @@ pub async fn query_kol_rooms() -> Result<String, Error> {
     Ok(serde_json::to_string(&rooms).unwrap_or_default())
 }
 pub async fn become_kol(id: String) -> Result<(), Error> {
-    let request = BecomeKolRequest { key: String::default() };
+    let request = BecomeKolRequest { key: id.clone() };
 
     let req = prepare_battery_call_args(
         id, "".to_string(), -1, 

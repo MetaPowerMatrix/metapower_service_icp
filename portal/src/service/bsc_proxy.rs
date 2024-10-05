@@ -64,7 +64,7 @@ pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
     let mut transfers = event.subscribe().await?;
     while let Some(log) = transfers.next().await {
         println!("Transfer: {:?}", log);
-        // proxy_contract_call_kol_staking(log.from.to_string(), log.tokens.as_u64()).await?;
+        // proxy_contract_call_kol_staking(log.from.to_string(), 10000).await?;
     }
 
     Ok(())
