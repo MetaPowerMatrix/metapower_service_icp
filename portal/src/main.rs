@@ -563,7 +563,10 @@ async fn portal_submit_tags(
 
     match submit_tags(id.into_inner(), tags.into_inner()).await {
         Ok(avatar_url) => resp.content = avatar_url,
-        Err(_) => resp.code = String::from("500"),
+        Err(e) =>{
+            resp.code = String::from("500");
+            resp.content = e.to_string();
+        }
     }
 
     Ok(web::Json(resp))
