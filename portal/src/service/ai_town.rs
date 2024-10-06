@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Error};
-use candid::Decode;
+use candid::{CandidType, Decode};
 use metapower_framework::icp::{
     call_query_method, call_update_method, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER,
     NAIS_MATRIX_CANISTER,
@@ -13,7 +13,6 @@ use std::env;
 use std::path::Path;
 use std::time::SystemTime;
 use std::io::Write;
-use candid::CandidType;
 use crate::service::{
     CreateResonse, HotAiResponse, HotTopicResponse, KolListResponse, NameResponse,
     PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, TokenResponse, TopicChatHisResponse,
@@ -49,20 +48,28 @@ struct PortalKnowledge {
     summary: String,
 }
 
+#[derive(Deserialize, Debug, Default, Serialize, CandidType)]
+struct BatterCallParams{
+    id: String,
+    token: String,
+    sn: i64,
+    method_name: String,
+    arg: String,
+}
 fn prepare_battery_call_args<T: Serialize>(
     id: String,
     token: String,
     sn: i64,
     method_name: String,
     arg: T,
-) -> (String, String, i64, String, String) {
-    (
+) -> BatterCallParams {
+    BatterCallParams{
         id,
         token,
         sn,
         method_name,
-        serde_json::to_string(&arg).unwrap_or_default(),
-    )
+        arg: serde_json::to_string(&arg).unwrap_or_default(),
+    }
 }
 
 pub async fn town_login(id: String) -> Result<(), Error> {
@@ -704,7 +711,7 @@ pub async fn submit_tags(id: String, tags: Vec<String>) -> Result<String, Error>
     );
 
     match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", 
-        (req,)).await {
+        req).await {
         Ok(_) => {}
         Err(e) => {
             log!("request_submit_tags error: {}", e);
