@@ -14,8 +14,7 @@ use std::path::Path;
 use std::time::SystemTime;
 use std::io::Write;
 use crate::service::{
-    CreateResonse, HotAiResponse, HotTopicResponse, KolListResponse, NameResponse,
-    PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, TokenResponse, TopicChatHisResponse,
+    CreateResonse, HotAiResponse, HotTopicResponse, KolListResponse, NameResponse, PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, SubmitTagsResponse, TokenResponse, TopicChatHisResponse
 };
 use crate::KolInfo;
 
@@ -699,7 +698,6 @@ pub async fn get_predefined_tags() -> Result<String, Error> {
     }
 }
 pub async fn submit_tags(id: String, tags: Vec<String>) -> Result<String, Error> {
-    let avatar = String::default();
     let request = SubmitTagsRequest { tags };
 
     let req = prepare_battery_call_args(
@@ -712,13 +710,14 @@ pub async fn submit_tags(id: String, tags: Vec<String>) -> Result<String, Error>
 
     match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", 
         req).await {
-        Ok(_) => {}
+        Ok(result) => {
+            let response = Decode!(result.as_slice(), SubmitTagsResponse).unwrap_or_default();
+            Ok(response.avatar)
+        }
         Err(e) => {
-            log!("request_submit_tags error: {}", e);
+            Err(e.into())
         }
     }
-
-    Ok(avatar)
 }
 
 pub async fn share_pro_knowledge(

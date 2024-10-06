@@ -478,3 +478,8 @@ pub struct QueryEmbeddingRequest {
 pub struct DocumentSummaryRequest {
     pub document: String,
 }
+
+#[derive(Deserialize, CandidType, Serialize, Debug, Default)]
+pub struct SubmitTagsResponse {
+    pub avatar: String,
+}
