@@ -704,7 +704,7 @@ pub async fn submit_tags(id: String, tags: Vec<String>) -> Result<String, Error>
     );
 
     match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", 
-        (req.0, req.1, req.2, req.3, req.4,)).await {
+        (req,)).await {
         Ok(_) => {}
         Err(e) => {
             log!("request_submit_tags error: {}", e);
