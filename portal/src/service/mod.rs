@@ -446,6 +446,7 @@ pub struct KnowLedgesRequest {
 
 #[derive(Deserialize, Serialize, CandidType)]
 pub struct SubmitTagsRequest {
+    pub id: String,
     pub tags: Vec<String>,
 }
 

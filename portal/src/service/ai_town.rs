@@ -698,7 +698,7 @@ pub async fn get_predefined_tags() -> Result<String, Error> {
     }
 }
 pub async fn submit_tags(id: String, tags: Vec<String>) -> Result<String, Error> {
-    let request = SubmitTagsRequest { tags };
+    let request = SubmitTagsRequest { id: id.clone(), tags  };
 
     let req = prepare_battery_call_args(
         id,
