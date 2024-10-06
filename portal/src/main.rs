@@ -546,7 +546,7 @@ async fn portal_get_predefined_tags() -> actix_web::Result<impl Responder> {
         code: String::from("200"),
     };
 
-    match get_predefined_tags() {
+    match get_predefined_tags().await {
         Ok(content) => resp.content = content,
         Err(e) => {
             println!("read tags json file error: {}", e);
