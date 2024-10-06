@@ -13,18 +13,15 @@ use actix_web::{
 use futures::StreamExt;
 use futures::TryStreamExt;
 use metapower_framework::{
-    get_now_secs_str_zh, ChatMessage, DataResponse, AI_AGENT_DIR,
-    AI_PATO_DIR, XFILES_SERVER,
+    get_now_secs_str_zh, ChatMessage, DataResponse, AI_AGENT_DIR, AI_PATO_DIR, XFILES_SERVER,
 };
 use serde::{Deserialize, Serialize};
-use service::{ai_town::{
-    add_shared_knowledge, become_kol, call_pato, continue_pato_chat, do_summary_and_embedding,
-    edit_pato_chat_messages, follow_kol, gen_pato_auth_token, get_name_by_id,
-    get_pato_chat_messages, get_pato_info, get_predefined_tags, get_pro_knowledges, get_topic_chat_history, pato_self_talk,
-    query_document_summary, query_kol_rooms, query_pato_auth_token,
-    retrieve_pato_by_name, share_pro_knowledge, shared_knowledges, submit_tags, topic_chat,
-    town_hot_topics, town_hots, town_login,
-}, bsc_proxy::{monitor_pab_transfer_event, proxy_contract_call_query_kol_staking}};
+use service::{
+    ai_town::{
+        add_shared_knowledge, become_kol, call_pato, continue_pato_chat, do_summary_and_embedding, edit_pato_chat_messages, follow_kol, get_name_by_id, get_pato_chat_messages, get_pato_info, get_predefined_tags, get_pro_knowledges, get_topic_chat_history, pato_self_talk, query_document_summary, query_kol_rooms, query_pato_auth_token, query_pato_by_kol_token, query_pato_kol_token, refresh_pato_auth_token, retrieve_pato_by_name, share_pro_knowledge, shared_knowledges, submit_tags, topic_chat, town_hot_topics, town_hots, town_login
+    },
+    bsc_proxy::{monitor_pab_transfer_event, proxy_contract_call_query_kol_staking},
+};
 use sha1::Digest;
 use std::{
     fs::OpenOptions,
@@ -194,9 +191,7 @@ struct TravelSceneInfo {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     println!("monitor event staking");
-    tokio::spawn({
-        monitor_pab_transfer_event()
-    });
+    tokio::spawn({ monitor_pab_transfer_event() });
 
     println!("metapower portal rest api @ 8030");
     HttpServer::new(|| {
@@ -338,7 +333,8 @@ async fn portal_upload_knowledge(mut payload: Multipart) -> actix_web::Result<im
         // Get the filename from the content-disposition header
         if filename.is_empty() {
             filename = content_disposition
-                .unwrap().get_filename()
+                .unwrap()
+                .get_filename()
                 .unwrap_or("knowledge file")
                 .to_string();
             println!("Filename: {}", filename);
@@ -919,7 +915,7 @@ async fn portal_get_pato_auth_token(id: web::Path<String>) -> actix_web::Result<
         code: String::from("200"),
     };
 
-    match gen_pato_auth_token(id.into_inner()).await {
+    match refresh_pato_auth_token(id.into_inner()).await {
         Ok(token) => {
             resp.content = token;
         }
@@ -931,17 +927,33 @@ async fn portal_get_pato_auth_token(id: web::Path<String>) -> actix_web::Result<
 
     Ok(web::Json(resp))
 }
-async fn portal_query_pato_auth_token(
-    token: web::Path<String>,
-) -> actix_web::Result<impl Responder> {
+async fn portal_get_pato_kol_token(id: web::Path<String>) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
         code: String::from("200"),
     };
 
-    match query_pato_auth_token(token.into_inner()).await {
+    match query_pato_kol_token(id.into_inner()).await {
         Ok(token) => {
-            resp.content = token.0 + "," + &token.1;
+            resp.content = serde_json::to_string(&token).unwrap_or_default();
+        }
+        Err(e) => {
+            println!("error: {}", e);
+            resp.code = String::from("500");
+        }
+    }
+
+    Ok(web::Json(resp))
+}
+async fn portal_get_pato_by_kol_token(token: web::Path<String>) -> actix_web::Result<impl Responder> {
+    let mut resp = DataResponse {
+        content: String::from(""),
+        code: String::from("200"),
+    };
+
+    match query_pato_by_kol_token(token.into_inner()).await {
+        Ok(token) => {
+            resp.content = serde_json::to_string(&token).unwrap_or_default();
         }
         Err(e) => {
             println!("error: {}", e);
@@ -1296,6 +1308,10 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                     .route(web::get().to(portal_get_pato_info)),
                             )
                             .service(
+                                web::resource("info/kol/token/{token}")
+                                    .route(web::get().to(portal_get_pato_by_kol_token)),
+                            )
+                            .service(
                                 web::resource("messages/{id}/{date}")
                                     .route(web::get().to(portal_get_pato_chat_messages)),
                             )
@@ -1308,12 +1324,12 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                     .route(web::post().to(portal_send_pato_instruct)),
                             )
                             .service(
-                                web::resource("pro/auth/gen/{id}")
+                                web::resource("auth/refresh/{id}")
                                     .route(web::get().to(portal_get_pato_auth_token)),
                             )
                             .service(
-                                web::resource("pro/auth/query/{token}")
-                                    .route(web::get().to(portal_query_pato_auth_token)),
+                                web::resource("kol/auth/query/{id}")
+                                    .route(web::get().to(portal_get_pato_kol_token)),
                             )
                             .service(
                                 web::resource("edit/messages")

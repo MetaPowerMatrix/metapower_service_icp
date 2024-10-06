@@ -769,14 +769,13 @@ pub async fn add_shared_knowledge(
 
     Ok(())
 }
-pub async fn gen_pato_auth_token(id: String) -> Result<String, Error> {
+pub async fn refresh_pato_auth_token(id: String) -> Result<String, Error> {
     let mut token = "".to_string();
 
-    let req = super::SimpleRequest { id };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_pato_auth_token", req).await {
+    match call_update_method(AGENT_SMITH_CANISTER, "refresh_battery_auth", id).await {
         Ok(result) => {
-            let response = Decode!(result.as_slice(), SimpleResponse).unwrap_or_default();
-            token = response.message.clone();
+            let response = Decode!(result.as_slice(), String).unwrap_or_default();
+            token = response.clone();
         }
         Err(e) => {
             log!("request_pato_auth_token error: {}", e);
@@ -785,12 +784,33 @@ pub async fn gen_pato_auth_token(id: String) -> Result<String, Error> {
 
     Ok(token)
 }
+pub async fn query_pato_kol_token(id: String) -> Result<TokenResponse, Error> {
+    match call_update_method(AGENT_SMITH_CANISTER, "query_pato_kol_token", id).await {
+        Ok(result) => {
+            let response = Decode!(result.as_slice(), TokenResponse).unwrap_or_default();
+            Ok(response)
+        }
+        Err(e) => {
+            Err(e.into())
+        }
+    }
+}
+pub async fn query_pato_by_kol_token(token: String) -> Result<TokenResponse, Error> {
+    match call_update_method(AGENT_SMITH_CANISTER, "query_pato_by_kol_token", token).await {
+        Ok(result) => {
+            let response = Decode!(result.as_slice(), TokenResponse).unwrap_or_default();
+            Ok(response)
+        }
+        Err(e) => {
+            Err(e.into())
+        }
+    }
+}
 pub async fn query_pato_auth_token(token: String) -> Result<(String, String), Error> {
     let mut id = "".to_string();
     let mut name = "".to_string();
 
-    let req = super::TokenRequest { token };
-    match call_update_method(AGENT_SMITH_CANISTER, "query_pato_auth_token", req).await {
+    match call_update_method(AGENT_SMITH_CANISTER, "query_pato_by_auth_token", token).await {
         Ok(result) => {
             let response = Decode!(result.as_slice(), TokenResponse).unwrap_or_default();
             id = response.id.clone();

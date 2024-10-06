@@ -243,10 +243,11 @@ pub struct TokenRequest {
     pub token: String,
 }
 
-#[derive(Deserialize, CandidType, Default)]
+#[derive(Deserialize, Serialize, CandidType, Default)]
 pub struct TokenResponse {
     pub id: String,
     pub name: String,
+    pub token: String,
 }
 
 #[derive(Deserialize, CandidType)]
