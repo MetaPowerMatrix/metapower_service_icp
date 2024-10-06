@@ -6,19 +6,17 @@ use metapower_framework::icp::{
 };
 use metapower_framework::{get_now_date_str, log};
 use metapower_framework::{
-    ChatMessage, PatoInfo, SessionMessages, AI_MATRIX_DIR, XFILES_LOCAL_DIR, XFILES_SERVER,
+    ChatMessage, PatoInfo, SessionMessages, XFILES_LOCAL_DIR, XFILES_SERVER,
 };
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::io::Read;
 use std::path::Path;
 use std::time::SystemTime;
-use std::{fs::OpenOptions, io::Write};
-
+use std::io::Write;
+use candid::CandidType;
 use crate::service::{
     CreateResonse, HotAiResponse, HotTopicResponse, KolListResponse, NameResponse,
-    PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse,
-    SimpleResponse, TokenResponse, TopicChatHisResponse,
+    PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, TokenResponse, TopicChatHisResponse,
 };
 use crate::KolInfo;
 
@@ -705,10 +703,11 @@ pub async fn submit_tags(id: String, tags: Vec<String>) -> Result<String, Error>
         request,
     );
 
-    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await {
-        Ok(answer) => {}
+    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", 
+        (req.0, req.1, req.2, req.3, req.4,)).await {
+        Ok(_) => {}
         Err(e) => {
-            log!("request_image_description error: {}", e);
+            log!("request_submit_tags error: {}", e);
         }
     }
 
