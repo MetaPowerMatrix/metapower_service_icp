@@ -62,14 +62,14 @@ fn prepare_battery_call_args<T: Serialize>(
     sn: i64,
     method_name: String,
     arg: T,
-) -> BatterCallParams {
-    BatterCallParams{
+) -> String {
+    serde_json::to_string(&BatterCallParams{
         id,
         token,
         sn,
         method_name,
         arg: serde_json::to_string(&arg).unwrap_or_default(),
-    }
+    }).unwrap_or_default()
 }
 
 pub async fn town_login(id: String) -> Result<(), Error> {
