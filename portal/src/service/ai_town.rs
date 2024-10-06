@@ -686,10 +686,10 @@ pub async fn get_predefined_tags() -> Result<String, Error> {
     match call_update_method(AGENT_SMITH_CANISTER, "request_predefined_tags", ()).await {
         Ok(result) => {
             let response = Decode!(result.as_slice(), String).unwrap_or_default();
-            return Ok(response);
+            Ok(response)
         }
         Err(e) => {
-            return Err(anyhow!("get_predefined_tags error: {}", e));
+            Err(anyhow!("get_predefined_tags error: {}", e))
         }
     }
 }
