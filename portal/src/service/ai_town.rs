@@ -14,7 +14,7 @@ use std::path::Path;
 use std::time::SystemTime;
 use std::io::Write;
 use crate::service::{
-    CreateResonse, HotAiResponse, HotTopicResponse, KolListResponse, NameResponse, PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, SubmitTagsResponse, TokenResponse, TopicChatHisResponse
+    CreateResonse, HotAiResponse, HotTopicResponse, KolListResponse, NameResponse, PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, SimpleResponse, SubmitTagsResponse, TokenResponse, TopicChatHisResponse
 };
 use crate::KolInfo;
 
@@ -84,18 +84,16 @@ pub async fn town_login(id: String) -> Result<(), Error> {
     Ok(())
 }
 pub async fn town_hots() -> String {
-    let req = super::EmptyRequest {};
-    match call_update_method(NAIS_MATRIX_CANISTER, "request_hot_ai", req).await {
+    match call_update_method(NAIS_MATRIX_CANISTER, "request_hot_ai", ()).await {
         Ok(response) => {
-            let result = Decode!(response.as_slice(), HotAiResponse).unwrap_or_default();
-            let hots = result.sheniu;
-            let resp = hots
+            let result = Decode!(response.as_slice(), Vec<PatoInfo>).unwrap_or_default();
+            let resp = result
                 .iter()
                 .map(|h| PortalHotAi {
                     id: h.id.clone(),
                     name: h.name.clone(),
-                    talks: h.talks,
-                    pros: h.pros.clone(),
+                    talks: 0,
+                    pros: "".to_string(),
                 })
                 .collect::<Vec<PortalHotAi>>();
 
@@ -858,19 +856,20 @@ pub async fn query_kol_rooms() -> Result<String, Error> {
 
     Ok(serde_json::to_string(&rooms).unwrap_or_default())
 }
-pub async fn become_kol(id: String) -> Result<(), Error> {
+pub async fn become_kol(id: String) -> Result<String, Error> {
     let request = BecomeKolRequest { key: id.clone() };
 
     let req = prepare_battery_call_args(id, "".to_string(), -1, "become_kol".to_string(), request);
 
     match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await {
-        Ok(answer) => {}
+        Ok(result) => {
+            let response = Decode!(result.as_slice(), SimpleResponse).unwrap_or_default();
+            Ok(response.message)
+        }
         Err(e) => {
-            log!("request_image_description error: {}", e);
+            Err(e.into())
         }
     }
-
-    Ok(())
 }
 pub async fn follow_kol(kol: String, follower: String) -> Result<(), Error> {
     let request = JoinKolRoomRequest {
@@ -887,12 +886,7 @@ pub async fn follow_kol(kol: String, follower: String) -> Result<(), Error> {
         request,
     );
 
-    match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await {
-        Ok(answer) => {}
-        Err(e) => {
-            log!("request_image_description error: {}", e);
-        }
-    }
+    call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await?;
 
     Ok(())
 }

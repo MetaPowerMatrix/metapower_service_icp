@@ -8,6 +8,7 @@ pub mod icp;
 
 use std::env;
 use std::{fs, path::Path, time::SystemTime};
+use candid::CandidType;
 use daemonize::Daemonize;
 use serde::de::DeserializeOwned;
 use service::llmchat_model::llmchat_grpc::TileTypeMap;
@@ -112,7 +113,7 @@ pub struct ActionInfo {
     pub action: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, CandidType)]
 pub struct PatoInfo {
     pub sn: i64,
     pub id: String,

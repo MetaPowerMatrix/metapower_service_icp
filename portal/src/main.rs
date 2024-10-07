@@ -268,9 +268,14 @@ async fn portal_become_kol(info: web::Path<String>) -> actix_web::Result<impl Re
 
     let id = info.into_inner();
 
-    if let Err(e) = become_kol(id).await {
-        println!("error: {}", e);
-        resp.code = String::from("500");
+    match become_kol(id).await {
+        Ok(token) => {
+            resp.content = token;
+        }
+        Err(e) => {
+            println!("error: {}", e);
+            resp.code = String::from("500");
+        }
     }
 
     Ok(web::Json(resp))
