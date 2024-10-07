@@ -4,7 +4,7 @@ use metapower_framework::icp::{
     call_update_method, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER,
     NAIS_MATRIX_CANISTER,
 };
-use metapower_framework::{get_now_date_str, log};
+use metapower_framework::{get_now_date_str, log, PatoInfoResp};
 use metapower_framework::{
     ChatMessage, PatoInfo, SessionMessages, XFILES_LOCAL_DIR, XFILES_SERVER,
 };
@@ -86,8 +86,8 @@ pub async fn town_login(id: String) -> Result<(), Error> {
 pub async fn town_hots() -> String {
     match call_update_method(NAIS_MATRIX_CANISTER, "request_hot_ai", ()).await {
         Ok(response) => {
-            println!("town_hots response: {:?}", response);
-            let result = Decode!(response.as_slice(), Vec<PatoInfo>).unwrap_or_default();
+            // println!("town_hots response: {:?}", response);
+            let result = Decode!(response.as_slice(), Vec<PatoInfoResp>).unwrap_or_default();
             let resp = result
                 .iter()
                 .map(|h| PortalHotAi {
@@ -207,12 +207,12 @@ pub async fn get_pato_info(id: String) -> Result<PatoInfo, Error> {
                 id: response.id.clone(),
                 name: response.name.clone(),
                 sn: response.sn,
-                matrix_datetime: get_now_date_str(),
                 registered_datetime: response.registered_datetime.clone(),
                 balance: response.balance,
                 tags: response.tags.clone(),
                 avatar: response.avatar.clone(),
                 cover: response.cover.clone(),
+                matrix_datetime: response.registered_datetime,
             };
             Ok(pato_info)
         }

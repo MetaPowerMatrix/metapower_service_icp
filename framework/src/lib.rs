@@ -112,6 +112,17 @@ pub struct ActionInfo {
     pub place: String,
     pub action: String,
 }
+#[derive(Debug, Deserialize, Serialize, CandidType)]
+pub struct PatoInfoResp {
+    pub sn: i64,
+    pub id: String,
+    pub name: String,
+    pub registered_datetime: String,
+    pub tags: Vec<String>,
+    pub avatar: String,
+    pub token: String,
+    pub token_refresh_at: u64,
+}
 
 #[derive(Debug, Deserialize, Serialize, CandidType)]
 pub struct PatoInfo {
