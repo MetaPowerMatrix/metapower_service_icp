@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Error};
 use candid::{CandidType, Decode};
 use metapower_framework::icp::{
-    call_query_method, call_update_method, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER,
+    call_update_method, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER,
     NAIS_MATRIX_CANISTER,
 };
 use metapower_framework::{get_now_date_str, log};
@@ -14,7 +14,7 @@ use std::path::Path;
 use std::time::SystemTime;
 use std::io::Write;
 use crate::service::{
-    CreateResonse, HotAiResponse, HotTopicResponse, KolListResponse, NameResponse, PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, SimpleResponse, SubmitTagsResponse, TokenResponse, TopicChatHisResponse
+    CreateResonse, HotTopicResponse, KolListResponse, NameResponse, PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, SimpleResponse, SubmitTagsResponse, TokenResponse, TopicChatHisResponse
 };
 use crate::KolInfo;
 
@@ -86,6 +86,7 @@ pub async fn town_login(id: String) -> Result<(), Error> {
 pub async fn town_hots() -> String {
     match call_update_method(NAIS_MATRIX_CANISTER, "request_hot_ai", ()).await {
         Ok(response) => {
+            println!("town_hots response: {:?}", response);
             let result = Decode!(response.as_slice(), Vec<PatoInfo>).unwrap_or_default();
             let resp = result
                 .iter()
