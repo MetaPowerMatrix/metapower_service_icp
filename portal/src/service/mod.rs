@@ -180,10 +180,10 @@ pub struct PatoInfoResponse {
     pub name: String,
     pub sn: i64,
     pub registered_datetime: String,
-    pub professionals: Vec<String>,
     pub balance: f32,
     pub tags: Vec<String>,
     pub avatar: String,
+    pub cover: String,
 }
 
 #[derive(Deserialize, CandidType, Debug)]

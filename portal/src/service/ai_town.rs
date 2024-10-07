@@ -210,10 +210,10 @@ pub async fn get_pato_info(id: String) -> Result<PatoInfo, Error> {
                 sn: response.sn,
                 matrix_datetime: get_now_date_str(),
                 registered_datetime: response.registered_datetime.clone(),
-                professionals: response.professionals.clone(),
                 balance: response.balance,
                 tags: response.tags.clone(),
                 avatar: response.avatar.clone(),
+                cover: response.cover.clone(),
             };
             Ok(pato_info)
         }

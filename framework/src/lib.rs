@@ -119,10 +119,10 @@ pub struct PatoInfo {
     pub name: String,
     pub matrix_datetime: String,
     pub registered_datetime: String,
-    pub professionals: Vec<String>,
     pub balance: f32,
     pub tags: Vec<String>,
     pub avatar: String,
+    pub cover: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
