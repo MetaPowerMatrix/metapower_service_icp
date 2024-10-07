@@ -200,7 +200,7 @@ pub async fn do_summary_and_embedding(
 }
 
 pub async fn get_pato_info(id: String) -> Result<PatoInfo, Error> {
-    match call_query_method(AGENT_SMITH_CANISTER, "request_pato_info", id).await {
+    match call_update_method(AGENT_SMITH_CANISTER, "request_pato_info", id).await {
         Ok(result) => {
             let response = Decode!(result.as_slice(), PatoInfoResponse).unwrap_or_default();
 
