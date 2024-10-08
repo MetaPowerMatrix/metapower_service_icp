@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 use dotenv::dotenv;
 use ethers::types::{Address, Filter};
 use std::env;
@@ -158,14 +157,14 @@ async fn proxy_contract_call_kol_staking(account: H160, amount: U256) -> Result<
     let contract = PabKOLStakingContract::new(contract_address, client);
 
     match (contract.stake(account, amount)).send().await{
-        Ok(tx_hash) => {
-            println!("Transaction sent: {:?}", tx_hash);
+        Ok(pending) => {
+            println!("Transaction sent: {:?}", pending);
 
             // Wait for confirmations with a timeout
-            let max_confirmation_count = 12;
-            let timeout = Duration::from_secs(60 * 10); // 10 minutes
-            let start_time = Instant::now();
-            let mut confirmation_count = 0;
+            // let max_confirmation_count = 12;
+            // let timeout = Duration::from_secs(60 * 10); // 10 minutes
+            // let start_time = Instant::now();
+            // let mut confirmation_count = 0;
 
             // loop {
             //     if start_time.elapsed() > timeout {
@@ -173,7 +172,7 @@ async fn proxy_contract_call_kol_staking(account: H160, amount: U256) -> Result<
             //         break;
             //     }
 
-            //     let receipt = provider.get_transaction_receipt(tx_hash).await?;
+            //     let receipt = provider.get_transaction_receipt(tx.tx_hash()).await?;
             //     if let Some(receipt) = receipt {
             //         confirmation_count = receipt.;
             //         println!("Confirmation count: {}", confirmation_count);
