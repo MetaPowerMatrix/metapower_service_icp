@@ -18,7 +18,12 @@ use metapower_framework::{
 use serde::{Deserialize, Serialize};
 use service::{
     ai_town::{
-        add_shared_knowledge, become_kol, call_pato, continue_pato_chat, do_summary_and_embedding, edit_pato_chat_messages, follow_kol, get_name_by_id, get_pato_chat_messages, get_pato_info, get_predefined_tags, get_pro_knowledges, get_topic_chat_history, pato_self_talk, query_document_summary, query_kol_rooms, query_pato_auth_token, query_pato_by_kol_token, query_pato_kol_token, refresh_pato_auth_token, retrieve_pato_by_name, share_pro_knowledge, shared_knowledges, submit_tags, topic_chat, town_hot_topics, town_hots, town_login
+        add_shared_knowledge, become_kol, call_pato, continue_pato_chat, do_summary_and_embedding,
+        edit_pato_chat_messages, follow_kol, get_name_by_id, get_pato_chat_messages, get_pato_info,
+        get_predefined_tags, get_pro_knowledges, get_topic_chat_history, pato_self_talk,
+        query_document_summary, query_kol_rooms, query_pato_by_kol_token,
+        query_pato_kol_token, refresh_pato_auth_token, retrieve_pato_by_name, share_pro_knowledge,
+        shared_knowledges, submit_tags, topic_chat, town_hot_topics, town_hots, town_login,
     },
     bsc_proxy::{monitor_pab_transfer_event, proxy_contract_call_query_kol_staking},
 };
@@ -61,9 +66,9 @@ struct ShareKnowledgeInfo {
 
 #[derive(Deserialize, Debug)]
 struct UserInfo {
-    name: String,
-    gender: u8,
-    personality: String,
+    pub name: String,
+    pub gender: u8,
+    pub personality: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -191,7 +196,7 @@ struct TravelSceneInfo {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     println!("monitor event staking");
-    tokio::spawn({ monitor_pab_transfer_event() });
+    tokio::spawn(monitor_pab_transfer_event());
 
     println!("metapower portal rest api @ 8030");
     HttpServer::new(|| {
@@ -568,7 +573,7 @@ async fn portal_submit_tags(
 
     match submit_tags(id.into_inner(), tags.into_inner()).await {
         Ok(avatar_url) => resp.content = avatar_url,
-        Err(e) =>{
+        Err(e) => {
             resp.code = String::from("500");
             resp.content = e.to_string();
         }
@@ -953,7 +958,9 @@ async fn portal_get_pato_kol_token(id: web::Path<String>) -> actix_web::Result<i
 
     Ok(web::Json(resp))
 }
-async fn portal_get_pato_by_kol_token(token: web::Path<String>) -> actix_web::Result<impl Responder> {
+async fn portal_get_pato_by_kol_token(
+    token: web::Path<String>,
+) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
         code: String::from("200"),

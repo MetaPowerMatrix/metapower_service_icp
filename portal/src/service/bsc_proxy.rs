@@ -39,6 +39,7 @@ const PAB_STAKING_CONTRACT: &str = "0x4fc96644264Dba5630cdcc4b7696A3f7b20d4471";
 const PAB_TOKEN_CONTRACT: &str = "0xD6311f9A6bd3a802263F4cd92e2729bC2C31Ed23";
 const BSC_WSS_URL: &str = "wss://bsc-mainnet.infura.io/ws/v3/7dec7de5256648e0bc864fbe224addeb";
 const BSC_HTTP_URL: &str = "https://bsc-mainnet.infura.io/v3/7dec7de5256648e0bc864fbe224addeb";
+const PAB_TRANSFER_SIG: &str = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
 #[derive(Clone, Debug, Serialize, Deserialize, EthEvent)]
 pub struct Transfer {
@@ -50,18 +51,24 @@ pub struct Transfer {
 }
 
 pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
+    println!("listen for {} events", PAB_TOKEN_CONTRACT);
+
     let provider = Provider::<Ws>::connect(BSC_WSS_URL).await?;
     let provider = Arc::new(provider);
     let token_topics = [
+        H256::from(PAB_TRANSFER_SIG.parse::<H160>()?),
         H256::from(PAB_TOKEN_CONTRACT.parse::<H160>()?),
     ];
     
     let filter = Filter::new()
-        .topic1(token_topics.to_vec())  // Monitor by the Transfer event signature
+        .topic0(token_topics.to_vec())  // Monitor by the Transfer event signature
         .topic2(token_topics.to_vec());
 
     let event = Transfer::new::<_, Provider<Ws>>(filter, Arc::clone(&provider));
     let mut transfers = event.subscribe().await?;
+
+    println!("subscription for {:?}", event);
+
     while let Some(log) = transfers.next().await {
         println!("Transfer: {:?}", log);
         // proxy_contract_call_kol_staking(log.from.to_string(), 10000).await?;
