@@ -14,7 +14,7 @@ use std::path::Path;
 use std::time::SystemTime;
 use std::io::Write;
 use crate::service::{
-    CreateResonse, HotTopicResponse, KolListResponse, NameResponse, PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, SimpleResponse, SubmitTagsResponse, TokenResponse, TopicChatHisResponse
+    CreateResonse, HotTopicResponse, KolListResponse, KolRelations, NameResponse, PatoInfoResponse, RoomCreateResponse, SharedKnowledgesResponse, SimpleResponse, SubmitTagsResponse, TokenResponse, TopicChatHisResponse
 };
 use crate::KolInfo;
 
@@ -828,34 +828,28 @@ pub async fn query_pato_auth_token(token: String) -> Result<(String, String), Er
     Ok((id, name))
 }
 pub async fn query_kol_rooms() -> Result<String, Error> {
-    let mut rooms: Vec<KolInfo> = vec![];
-    let req = super::EmptyRequest {};
-    match call_update_method(AGENT_SMITH_CANISTER, "request_kol_list", req).await {
+    let mut kols: Vec<KolInfo> = vec![];
+    match call_update_method(AGENT_SMITH_CANISTER, "request_kol_list", ()).await {
         Ok(result) => {
-            let resp = Decode!(result.as_slice(), KolListResponse).unwrap_or_default();
+            let resp = Decode!(result.as_slice(), Vec<KolRelations>).unwrap_or_default();
 
-            for response in resp.relations.iter() {
-                let mut avatar_link =
-                    format!("{}/avatar/{}/avatar.png", XFILES_SERVER, response.id);
-                let avatar = format!("{}/avatar/{}/avatar.png", XFILES_LOCAL_DIR, response.id);
-                if !Path::new(&avatar).exists() {
-                    avatar_link = "".to_string();
-                }
+            for response in resp.iter() {
+                let avatar_link = format!("{}/ai/{}/avatar.png", XFILES_SERVER, response.id);
                 let info = KolInfo {
                     id: response.id.clone(),
                     name: response.name.clone(),
                     followers: response.follower.clone(),
                     avatar: avatar_link,
                 };
-                rooms.push(info);
+                kols.push(info);
             }
         }
         Err(e) => {
-            log!("request_kol_list error: {}", e);
+            return Err(e.into());
         }
     }
 
-    Ok(serde_json::to_string(&rooms).unwrap_or_default())
+    Ok(serde_json::to_string(&kols).unwrap_or_default())
 }
 pub async fn become_kol(id: String, from: String) -> Result<String, Error> {
     let request = BecomeKolRequest { id: id.clone(), from };

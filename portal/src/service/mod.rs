@@ -326,7 +326,7 @@ pub struct FollowKolRequest {
     pub key: String,
 }
 
-#[derive(Deserialize, CandidType)]
+#[derive(Deserialize, CandidType, Serialize)]
 pub struct KolRelations {
     pub id: String,
     pub name: String,
