@@ -861,7 +861,7 @@ pub async fn become_kol(id: String, from: String) -> Result<String, Error> {
     let request = BecomeKolRequest { id: id.clone(), from };
 
     let req = prepare_battery_call_args(id, "".to_string(), -1, "become_kol".to_string(), request);
-
+    println!("become_kol req: {}", req);
     match call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await {
         Ok(result) => {
             let response = Decode!(result.as_slice(), SimpleResponse).unwrap_or_default();
