@@ -114,7 +114,7 @@ async fn proxy_contract_call_update_balance(account: H160, update_amount: U256) 
 
     // Connect to the BSC mainnet using the RPC URL
     let provider = Provider::<Http>::try_from(BSC_HTTP_URL)?;
-    let client = SignerMiddleware::new(provider, wallet);
+    let client = SignerMiddleware::new(provider, wallet.with_chain_id(56u64));
     let client = Arc::new(client);
 
     let contract_address = PAB_BALANCE_LEDGER_CONTRACT.parse::<Address>()?;
