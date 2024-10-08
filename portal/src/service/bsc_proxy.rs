@@ -35,7 +35,7 @@ abigen!(
 );
 
 const PAB_BALANCE_LEDGER_CONTRACT: &str = "0x5C98D79e6Ce7299a2Ea84B2898eAF064038AA1f3";
-const PAB_STAKING_CONTRACT: &str = "0x4fc96644264Dba5630cdcc4b7696A3f7b20d4471";
+const PAB_STAKING_CONTRACT: &str = "0x40B92673B50d4cA94AAF38007fCf12B7D24abe48";
 const PAB_TOKEN_CONTRACT: &str = "0xD6311f9A6bd3a802263F4cd92e2729bC2C31Ed23";
 const BSC_WSS_URL: &str = "wss://bsc-mainnet.infura.io/ws/v3/7dec7de5256648e0bc864fbe224addeb";
 const BSC_HTTP_URL: &str = "https://bsc-mainnet.infura.io/v3/7dec7de5256648e0bc864fbe224addeb";
