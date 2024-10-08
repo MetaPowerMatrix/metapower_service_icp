@@ -55,7 +55,7 @@ pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
 
     let token_topics = [
         H256::from(PAB_STAKING_CONTRACT.parse::<H160>().expect("wrong address to")),
-        H256::from(PAB_TRANSFER_SIG.parse::<H160>().expect("wrong sig")),
+        PAB_TRANSFER_SIG.parse::<H256>().expect("wrong sig"),
     ];
     
     let filter = Filter::new()
