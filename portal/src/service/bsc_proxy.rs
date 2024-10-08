@@ -54,13 +54,16 @@ pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
     println!("listen for {} events", PAB_TOKEN_CONTRACT);
 
     let token_topics = [
-        H256::from(PAB_STAKING_CONTRACT.parse::<H160>().expect("wrong address to")),
         PAB_TRANSFER_SIG.parse::<H256>().expect("wrong sig"),
+    ];
+    let token_topics_to = [
+        H256::from(PAB_STAKING_CONTRACT.parse::<H160>().expect("wrong address to")),
+        H256::from(PAB_BALANCE_LEDGER_CONTRACT.parse::<H160>().expect("wrong address to")),
     ];
     
     let filter = Filter::new()
         .topic0(token_topics.to_vec())  // Monitor by the Transfer event signature
-        .topic2(token_topics.to_vec());
+        .topic2(token_topics_to.to_vec());
 
     match Provider::<Ws>::connect(BSC_WSS_URL).await{
         Ok(provider) => {
