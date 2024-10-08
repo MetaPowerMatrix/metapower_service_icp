@@ -72,8 +72,17 @@ pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
                 Ok(mut transfers) => {
                     println!("Subscribed to {:?}", event);
                     while let Some(log) = transfers.next().await {
-                        println!("Transfer: {:?}", log);
-                        // proxy_contract_call_kol_staking(log.from.to_string(), 10000).await?;
+                        match log {
+                            Ok(transfer) => {
+                                println!("Transfer: {:?}", transfer);
+                                let tx = transfer as Transfer;
+                                match proxy_contract_call_kol_staking(tx.from, tx.tokens).await{
+                                    Ok(_) => println!("Update staking success"),
+                                    Err(e) => println!("Error update staking: {:?}", e),
+                                }
+                            }
+                            Err(e) => println!("Error parse log: {:?}", e),
+                        }
                     }
                 }
                 Err(e) => println!("Error subscribing to Transfer event: {:?}", e),
@@ -85,7 +94,7 @@ pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
     Ok(())
 }
 
-async fn proxy_contract_call_update_balance(account: String, update_amount: u64) -> Result<(), Box<dyn std::error::Error>> {
+async fn proxy_contract_call_update_balance(account: H160, update_amount: U256) -> Result<(), Error> {
     dotenv().ok();
 
     // Load the private key from the environment
@@ -100,9 +109,7 @@ async fn proxy_contract_call_update_balance(account: String, update_amount: u64)
     let contract_address = PAB_BALANCE_LEDGER_CONTRACT.parse::<Address>()?;
     let contract = PabLedgerContract::new(contract_address, client);
 
-    let updated_account_address = H160::from_str(&account).unwrap_or_default();
-    let amount = U256::from(update_amount);
-    match contract.update_balance(updated_account_address, amount).send().await{
+    match contract.update_balance(account, update_amount).send().await{
         Ok(result) => println!("Transaction sent: {:?}", result),
         Err(e) => println!("Error updating balance: {:?}", e),
     }
@@ -136,7 +143,7 @@ pub async fn proxy_contract_call_query_kol_staking(account: String) -> Result<u6
     Ok(amount)
 }
 
-async fn proxy_contract_call_kol_staking(owner: String, staked_amount: u64) -> Result<(), Error> {
+async fn proxy_contract_call_kol_staking(account: H160, amount: U256) -> Result<(), Error> {
     dotenv().ok();
 
     let private_key = env::var("BSC_PRIVATE_KEY")?;
@@ -149,11 +156,9 @@ async fn proxy_contract_call_kol_staking(owner: String, staked_amount: u64) -> R
     let contract_address = PAB_STAKING_CONTRACT.parse::<Address>()?;
     let contract = PabKOLStakingContract::new(contract_address, client);
 
-    let account_address = H160::from_str(&owner).unwrap_or_default();
-    let amount = U256::from(staked_amount);
-    match contract.stake(account_address, amount).send().await{
+    match contract.stake(account, amount).send().await{
         Ok(result) => println!("Transaction sent: {:?}", result),
-        Err(e) => println!("Error updating balance: {:?}", e),
+        Err(e) => println!("Error updating staking: {:?}", e),
     }
 
     Ok(())
