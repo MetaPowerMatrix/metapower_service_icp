@@ -150,7 +150,7 @@ async fn proxy_contract_call_kol_staking(account: H160, amount: U256) -> Result<
     let wallet: LocalWallet = private_key.parse::<LocalWallet>()?;
 
     let provider = Provider::<Http>::try_from(BSC_HTTP_URL)?;
-    let client = SignerMiddleware::new(provider, wallet);
+    let client = SignerMiddleware::new(provider, wallet.with_chain_id(56u64));
     let client = Arc::new(client);
 
     let contract_address = PAB_STAKING_CONTRACT.parse::<Address>()?;
