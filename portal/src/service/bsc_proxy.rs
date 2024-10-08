@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use dotenv::dotenv;
 use ethers::types::{Address, Filter};
 use std::env;
@@ -156,8 +157,36 @@ async fn proxy_contract_call_kol_staking(account: H160, amount: U256) -> Result<
     let contract_address = PAB_STAKING_CONTRACT.parse::<Address>()?;
     let contract = PabKOLStakingContract::new(contract_address, client);
 
-    match (contract.stake(account, amount)).call().await{
-        Ok(result) => println!("Transaction sent: {:?}", result),
+    match (contract.stake(account, amount)).send().await{
+        Ok(tx_hash) => {
+            println!("Transaction sent: {:?}", tx_hash);
+
+            // Wait for confirmations with a timeout
+            let max_confirmation_count = 12;
+            let timeout = Duration::from_secs(60 * 10); // 10 minutes
+            let start_time = Instant::now();
+            let mut confirmation_count = 0;
+
+            // loop {
+            //     if start_time.elapsed() > timeout {
+            //         println!("Transaction timed out");
+            //         break;
+            //     }
+
+            //     let receipt = provider.get_transaction_receipt(tx_hash).await?;
+            //     if let Some(receipt) = receipt {
+            //         confirmation_count = receipt.;
+            //         println!("Confirmation count: {}", confirmation_count);
+            //         if confirmation_count >= max_confirmation_count {
+            //             println!("Transaction confirmed: {:?}", receipt);
+            //             break;
+            //         }
+            //     }
+            //     // Wait for a short duration before checking again (adjust as needed)
+            //     tokio::time::sleep(Duration::from_secs(1)).await;
+            // }
+        }
+
         Err(e) => println!("Error updating staking: {:?}", e),
     }
 
