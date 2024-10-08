@@ -265,15 +265,15 @@ async fn portal_kol_list() -> actix_web::Result<impl Responder> {
 
     Ok(web::Json(resp))
 }
-async fn portal_become_kol(info: web::Path<String>) -> actix_web::Result<impl Responder> {
+async fn portal_become_kol(info: web::Path<(String,String)>) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
         code: String::from("200"),
     };
 
-    let id = info.into_inner();
+    let (id, from) = info.into_inner();
 
-    match become_kol(id).await {
+    match become_kol(id, from).await {
         Ok(token) => {
             resp.content = token;
         }
@@ -291,9 +291,9 @@ async fn portal_query_kol_staking(info: web::Path<String>) -> actix_web::Result<
         code: String::from("404"),
     };
 
-    let id = info.into_inner();
+    let from = info.into_inner();
 
-    match proxy_contract_call_query_kol_staking(id).await {
+    match proxy_contract_call_query_kol_staking(from).await {
         Ok(staking) => {
             resp.content = staking.to_string();
             resp.code = String::from("200");
@@ -1293,7 +1293,7 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                     .route(web::post().to(portal_create_game_room)),
                             )
                             .service(
-                                web::resource("become/kol/{id}")
+                                web::resource("become/kol/{id}/{from}")
                                     .route(web::get().to(portal_become_kol)),
                             )
                             .service(

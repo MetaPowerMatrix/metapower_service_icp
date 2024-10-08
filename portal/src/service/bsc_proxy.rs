@@ -124,7 +124,7 @@ pub async fn proxy_contract_call_query_kol_staking(account: String) -> Result<u6
     let wallet: LocalWallet = private_key.parse::<LocalWallet>()?;
 
     let provider = Provider::<Http>::try_from(BSC_HTTP_URL)?;
-    let client = SignerMiddleware::new(provider, wallet);
+    let client = SignerMiddleware::new(provider, wallet.with_chain_id(56u64));
     let client = Arc::new(client);
 
     let contract_address = PAB_STAKING_CONTRACT.parse::<Address>()?;
@@ -134,7 +134,7 @@ pub async fn proxy_contract_call_query_kol_staking(account: String) -> Result<u6
     let mut amount: u64 = 0;
     match contract.stakes_of(account_address).call().await{
         Ok(result) => {
-            println!("Transaction sent: {:?}", result);
+            println!("contract call resp: {:?}", result);
             amount = result.as_u64();
         }
         Err(e) => println!("Error updating balance: {:?}", e),
@@ -156,7 +156,7 @@ async fn proxy_contract_call_kol_staking(account: H160, amount: U256) -> Result<
     let contract_address = PAB_STAKING_CONTRACT.parse::<Address>()?;
     let contract = PabKOLStakingContract::new(contract_address, client);
 
-    match contract.stake(account, amount).send().await{
+    match (contract.stake(account, amount)).call().await{
         Ok(result) => println!("Transaction sent: {:?}", result),
         Err(e) => println!("Error updating staking: {:?}", e),
     }

@@ -459,7 +459,8 @@ pub struct ShareKnowLedgesRequest {
 
 #[derive(Deserialize, Serialize, CandidType)]
 pub struct BecomeKolRequest {
-    pub key: String,
+    pub id: String,
+    pub from: String,
 }
 
 #[derive(Deserialize, Serialize, CandidType)]

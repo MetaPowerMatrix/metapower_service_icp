@@ -857,8 +857,8 @@ pub async fn query_kol_rooms() -> Result<String, Error> {
 
     Ok(serde_json::to_string(&rooms).unwrap_or_default())
 }
-pub async fn become_kol(id: String) -> Result<String, Error> {
-    let request = BecomeKolRequest { key: id.clone() };
+pub async fn become_kol(id: String, from: String) -> Result<String, Error> {
+    let request = BecomeKolRequest { id: id.clone(), from };
 
     let req = prepare_battery_call_args(id, "".to_string(), -1, "become_kol".to_string(), request);
 
