@@ -76,9 +76,17 @@ pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
                             Ok(transfer) => {
                                 println!("Transfer: {:?}", transfer);
                                 let tx = transfer as Transfer;
-                                match proxy_contract_call_kol_staking(tx.from, tx.tokens).await{
-                                    Ok(_) => println!("Update staking success"),
-                                    Err(e) => println!("Error update staking: {:?}", e),
+                                if tx.to == PAB_BALANCE_LEDGER_CONTRACT.parse::<Address>().unwrap(){
+                                    match proxy_contract_call_update_balance(tx.from, tx.tokens).await{
+                                        Ok(_) => println!("Update balance success"),
+                                        Err(e) => println!("Error update balance: {:?}", e),
+                                    }
+                                }
+                                else if tx.to == PAB_STAKING_CONTRACT.parse::<Address>().unwrap(){
+                                    match proxy_contract_call_kol_staking(tx.from, tx.tokens).await{
+                                        Ok(_) => println!("Update staking success"),
+                                        Err(e) => println!("Error update staking: {:?}", e),
+                                    }
                                 }
                             }
                             Err(e) => println!("Error parse log: {:?}", e),
@@ -135,6 +143,32 @@ pub async fn proxy_contract_call_query_kol_staking(account: String) -> Result<u6
     match contract.stakes_of(account_address).call().await{
         Ok(result) => {
             println!("contract call resp: {:?}", result);
+            amount = result.as_u64();
+        }
+        Err(e) => println!("Error updating balance: {:?}", e),
+    }
+
+    Ok(amount)
+}
+
+pub async fn proxy_contract_call_query_kol_ticket(account: String) -> Result<u64, Error> {
+    dotenv().ok();
+
+    let private_key = env::var("BSC_PRIVATE_KEY")?;
+    let wallet: LocalWallet = private_key.parse::<LocalWallet>()?;
+
+    let provider = Provider::<Http>::try_from(BSC_HTTP_URL)?;
+    let client = SignerMiddleware::new(provider, wallet.with_chain_id(56u64));
+    let client = Arc::new(client);
+
+    let contract_address = PAB_BALANCE_LEDGER_CONTRACT.parse::<Address>()?;
+    let contract = PabLedgerContract::new(contract_address, client);
+
+    let account_address = H160::from_str(&account).unwrap_or_default();
+    let mut amount: u64 = 0;
+    match contract.get_balance(account_address).call().await{
+        Ok(result) => {
+            println!("ticket contract call resp: {:?}", result);
             amount = result.as_u64();
         }
         Err(e) => println!("Error updating balance: {:?}", e),

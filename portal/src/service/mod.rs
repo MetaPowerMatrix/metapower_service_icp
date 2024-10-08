@@ -468,6 +468,7 @@ pub struct JoinKolRoomRequest {
     pub kol: String,
     pub follower: String,
     pub key: String,
+    pub from: String,
 }
 
 #[derive(Deserialize, Serialize, CandidType)]

@@ -25,7 +25,7 @@ use service::{
         query_pato_kol_token, refresh_pato_auth_token, retrieve_pato_by_name, share_pro_knowledge,
         shared_knowledges, submit_tags, topic_chat, town_hot_topics, town_hots, town_login,
     },
-    bsc_proxy::{monitor_pab_transfer_event, proxy_contract_call_query_kol_staking},
+    bsc_proxy::{monitor_pab_transfer_event, proxy_contract_call_query_kol_staking, proxy_contract_call_query_kol_ticket},
 };
 use sha1::Digest;
 use std::{
@@ -305,15 +305,35 @@ async fn portal_query_kol_staking(info: web::Path<String>) -> actix_web::Result<
 
     Ok(web::Json(resp))
 }
-async fn portal_join_kol(info: web::Path<(String, String)>) -> actix_web::Result<impl Responder> {
+async fn portal_query_kol_ticket(info: web::Path<String>) -> actix_web::Result<impl Responder> {
+    let mut resp = DataResponse {
+        content: "0".to_string(),
+        code: String::from("404"),
+    };
+
+    let from = info.into_inner();
+
+    match proxy_contract_call_query_kol_ticket(from).await {
+        Ok(staking) => {
+            resp.content = staking.to_string();
+            resp.code = String::from("200");
+        }
+        Err(e) => {
+            println!("error: {}", e);
+        }
+    }
+
+    Ok(web::Json(resp))
+}
+async fn portal_join_kol(info: web::Path<(String, String, String)>) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
         code: String::from("200"),
     };
 
-    let (follower, kol) = info.into_inner();
+    let (follower, kol, from) = info.into_inner();
 
-    if let Err(e) = follow_kol(kol, follower).await {
+    if let Err(e) = follow_kol(kol, follower, from).await {
         println!("error: {}", e);
         resp.code = String::from("500");
     }
@@ -1301,7 +1321,11 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                     .route(web::get().to(portal_query_kol_staking)),
                             )
                             .service(
-                                web::resource("follow/kol/{follower}/{kol}")
+                                web::resource("query/ticket/{id}")
+                                    .route(web::get().to(portal_query_kol_ticket)),
+                            )
+                            .service(
+                                web::resource("follow/kol/{follower}/{kol}/{from}")
                                     .route(web::get().to(portal_join_kol)),
                             )
                             .service(

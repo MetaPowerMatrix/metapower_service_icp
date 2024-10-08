@@ -866,11 +866,12 @@ pub async fn become_kol(id: String, from: String) -> Result<String, Error> {
         }
     }
 }
-pub async fn follow_kol(kol: String, follower: String) -> Result<(), Error> {
+pub async fn follow_kol(kol: String, follower: String, from: String) -> Result<(), Error> {
     let request = JoinKolRoomRequest {
         key: String::default(),
         kol: kol.clone(),
         follower,
+        from,
     };
 
     let req = prepare_battery_call_args(
