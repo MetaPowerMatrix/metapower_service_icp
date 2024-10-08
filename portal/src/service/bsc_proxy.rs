@@ -53,8 +53,6 @@ pub struct Transfer {
 pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
     println!("listen for {} events", PAB_TOKEN_CONTRACT);
 
-    let provider = Provider::<Ws>::connect(BSC_WSS_URL).await?;
-    let provider = Arc::new(provider);
     let token_topics = [
         H256::from(PAB_TRANSFER_SIG.parse::<H160>()?),
         H256::from(PAB_STAKING_CONTRACT.parse::<H160>()?),
@@ -64,14 +62,24 @@ pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
         .topic0(token_topics.to_vec())  // Monitor by the Transfer event signature
         .topic2(token_topics.to_vec());
 
-    let event = Transfer::new::<_, Provider<Ws>>(filter, Arc::clone(&provider));
-    let mut transfers = event.subscribe().await?;
-
-    println!("subscription for {:?}", event);
-
-    while let Some(log) = transfers.next().await {
-        println!("Transfer: {:?}", log);
-        // proxy_contract_call_kol_staking(log.from.to_string(), 10000).await?;
+    match Provider::<Ws>::connect(BSC_WSS_URL).await{
+        Ok(provider) => {
+            println!("Connected to BSC mainnet");
+            let provider = Arc::new(provider);
+            let event = Transfer::new::<_, Provider<Ws>>(filter, Arc::clone(&provider));
+            let event_sub = event.subscribe().await;
+            match event_sub{
+                Ok(mut transfers) => {
+                    println!("Subscribed to {:?}", event);
+                    while let Some(log) = transfers.next().await {
+                        println!("Transfer: {:?}", log);
+                        // proxy_contract_call_kol_staking(log.from.to_string(), 10000).await?;
+                    }
+                }
+                Err(e) => println!("Error subscribing to Transfer event: {:?}", e),
+            }
+        }
+        Err(e) => println!("Error connecting to BSC mainnet: {:?}", e),
     }
 
     Ok(())
