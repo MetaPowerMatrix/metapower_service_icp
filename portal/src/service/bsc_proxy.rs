@@ -57,7 +57,7 @@ pub async fn monitor_pab_transfer_event() -> Result<(), Error> {
     let provider = Arc::new(provider);
     let token_topics = [
         H256::from(PAB_TRANSFER_SIG.parse::<H160>()?),
-        H256::from(PAB_TOKEN_CONTRACT.parse::<H160>()?),
+        H256::from(PAB_STAKING_CONTRACT.parse::<H160>()?),
     ];
     
     let filter = Filter::new()
