@@ -137,6 +137,13 @@ pub struct PatoInfo {
     pub cover: String,
 }
 
+#[derive(Deserialize, CandidType, Serialize, Debug, Default)]
+pub struct SubmitTagsResponse {
+    pub avatar: String,
+    pub cover: String,
+    pub character: String,
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Coordinate {
     pub x: i64,

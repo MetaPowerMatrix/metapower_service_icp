@@ -4,7 +4,6 @@ use std::env;
 use std::io::Write;
 use anyhow::Error;
 use bytemuck::cast_slice;
-// use ffmpeg_next::time::sleep;
 use futures::SinkExt;
 use hound::{WavSpec, WavWriter};
 use metapower_framework::{log, service::llmchat_model::llmchat_grpc::{chat_svc_client::ChatSvcClient, SpeechToTextRequest}, LLMCHAT_GRPC_REST_SERVER};

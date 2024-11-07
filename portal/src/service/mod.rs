@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod ai_town;
 pub mod bsc_proxy;
+pub mod llm_proxy;
 
 // from metapowermatrix_matrix
 
@@ -483,6 +484,9 @@ pub struct DocumentSummaryRequest {
 }
 
 #[derive(Deserialize, CandidType, Serialize, Debug, Default)]
-pub struct SubmitTagsResponse {
-    pub avatar: String,
+pub struct FileUploadInfo {
+    pub file_name: String,
+    pub file_type: String,
+    pub biz: String,
 }
+
