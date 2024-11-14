@@ -105,8 +105,7 @@ pub async fn town_hots() -> String {
     String::default()
 }
 pub async fn town_hot_topics() -> String {
-    let req = super::EmptyRequest {};
-    match call_update_method(NAIS_MATRIX_CANISTER, "request_hot_topics", req).await {
+    match call_update_method(NAIS_MATRIX_CANISTER, "request_hot_topics", ()).await {
         Ok(response) => {
             let result = Decode!(response.as_slice(), HotTopicResponse).unwrap_or_default();
             let topics = result.topics.clone();
@@ -120,8 +119,7 @@ pub async fn town_hot_topics() -> String {
     String::default()
 }
 pub async fn shared_knowledges() -> String {
-    let req = super::EmptyRequest {};
-    match call_update_method(NAIS_MATRIX_CANISTER, "request_shared_knowledges", req).await {
+    match call_update_method(NAIS_MATRIX_CANISTER, "request_shared_knowledges", ()).await {
         Ok(result) => {
             let response = Decode!(result.as_slice(), SharedKnowledgesResponse).unwrap_or_default();
             let hots = response.books;
@@ -182,8 +180,7 @@ pub async fn get_pato_info(id: String) -> Result<PatoInfo, Error> {
     }
 }
 pub async fn retrieve_pato_by_name(name: String) -> Result<String, Error> {
-    let req = super::SimpleRequest { id: name };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_pato_by_name", req).await {
+    match call_update_method(AGENT_SMITH_CANISTER, "request_pato_by_name", name).await {
         Ok(result) => {
             let response = Decode!(result.as_slice(), NameResponse).unwrap_or_default();
 

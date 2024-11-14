@@ -36,53 +36,10 @@ struct TopicChatInfo {
 }
 
 #[derive(Deserialize, Debug)]
-struct ShareKnowledgeInfo {
-    id: String,
-    owner: String,
-    sig: String,
-    title: String,
-    shared: bool,
-}
-
-#[derive(Deserialize, Debug)]
 struct UserInfo {
     pub name: String,
     pub gender: u8,
     pub personality: String,
-}
-
-#[derive(Deserialize, Debug)]
-struct InstructInfo {
-    id: String,
-    pro: String,
-    message: String,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-struct PortalRoomInfo {
-    room_id: String,
-    owner: String,
-    title: String,
-    description: String,
-    cover: String,
-    town: String,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-struct ImagePromptRequest {
-    id: String,
-    description: String,
-    history: String,
-    architecture: String,
-}
-#[derive(Deserialize, Debug, Serialize)]
-struct GenImageAnswerInfo {
-    room_id: String,
-    level: i32,
-    id: String,
-    input: String,
-    image_url: String,
-    prompt: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -753,7 +710,6 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                     .service(web::resource("download/ai/resource/{id}").route(web::post().to(download_generated_file_with_path)))
                     .service(
                         web::scope("kol")
-                            .service(web::resource("hots").route(web::get().to(portal_town_hots)))
                             .service(
                                 web::resource("hot/topics")
                                     .route(web::get().to(portal_town_hot_topics)),
@@ -780,6 +736,7 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                     )
                     .service(
                         web::scope("pato")
+                            .service(web::resource("hots").route(web::get().to(portal_town_hots)))
                             .service(
                                 web::resource("tags")
                                     .route(web::get().to(portal_get_predefined_tags)),
