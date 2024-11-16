@@ -9,9 +9,9 @@ use candid::Decode;
 use metapower_framework::dao::crawler::download_image;
 use metapower_framework::ensure_directory_exists;
 use metapower_framework::icp::call_update_method;
+use metapower_framework::icp::AGENT_BATTERY_CANISTER;
 use metapower_framework::icp::AGENT_SMITH_CANISTER;
 use metapower_framework::icp::NAIS_MATRIX_CANISTER;
-use metapower_framework::SubmitTagsResponse;
 use metapower_framework::XFILES_LOCAL_DIR;
 use metapower_framework::XFILES_SERVER;
 use serde::{Deserialize, Serialize};
@@ -90,16 +90,16 @@ async fn save_session_file(id: String, session_key: String, file_name: String, d
 }
 
 pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, file_name: String, content: Vec<u8>) -> Result<String, Error> {
-    let mut resp = String::default();
     let _ = ensure_directory_exists(&format!("{}/ai/{}", XFILES_LOCAL_DIR, id));
     let url_embedding = format!("{}{}/api/gen/embedding", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
     let url_summary = format!("{}{}/api/gen/summary", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
 
     let local_name = file_name;
+    let mut resp: String = "文件已经上传".to_string();
     if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await{
-        resp = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
-
         let embedding_request = FileGenRequest{ content: String::from_utf8(content.clone()).unwrap_or_default() };
+
+        save_session_file(id.clone(), session_key.clone(), local_name.clone(), content).await;
 
         let client = reqwest::Client::new();
         let response = client
@@ -108,8 +108,9 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
             .send()
             .await?;
 
-        let embedding = response.text().await?;
-        println!("embedding: {}", embedding);
+        let embedding = response.bytes().await?;
+        println!("embedding: {:?}", embedding);
+        save_session_file(id.clone(), session_key.clone(), local_name.clone(), embedding.to_vec()).await;
 
         let response = client
             .post(&url_summary)
@@ -119,37 +120,8 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
 
         let summary = response.text().await?;
         println!("summary: {}", summary);
-
-        let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
-        match OpenOptions::new().write(true).create(true).truncate(true).open(&saved_local_file){
-            Ok(mut file) => {
-                file.write_all(&content)?;
-                save_session_file(id.clone(), session_key.clone(), local_name.clone(), content).await;
-            }
-            Err(e) => {
-                println!("open file error: {}", e);
-            }
-        }    
-        let saved_local_embedding = format!("{}/ai/{}/{}.embedding", XFILES_LOCAL_DIR, id, local_name);
-        match OpenOptions::new().write(true).create(true).truncate(true).open(&saved_local_embedding){
-            Ok(mut file) => {
-                file.write_all(embedding.as_bytes())?;
-                save_session_file(id.clone(), session_key.clone(), local_name.clone(), embedding.as_bytes().to_vec()).await;
-            }
-            Err(e) => {
-                println!("open file error: {}", e);
-            }
-        }    
-        let saved_local_summary = format!("{}/ai/{}/{}.summary", XFILES_LOCAL_DIR, id, local_name);
-        match OpenOptions::new().write(true).create(true).truncate(true).open(&saved_local_summary){
-            Ok(mut file) => {
-                file.write_all(summary.as_bytes())?;
-                save_session_file(id.clone(), session_key.clone(), local_name.clone(), summary.as_bytes().to_vec()).await;
-            }
-            Err(e) => {
-                println!("open file error: {}", e);
-            }
-        }    
+        resp = summary.clone();
+        save_session_file(id.clone(), session_key.clone(), local_name.clone(), summary.as_bytes().to_vec()).await;
     }
 
     Ok(resp)
@@ -176,34 +148,45 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
 
     Ok(resp)
 }
-pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: String) -> Result<SubmitTagsResponse, Error> {
-    let mut resp = SubmitTagsResponse::default();
-
-    let url = format!("{}{}/api/gen/character", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
-    let tag_request = CharacterGenRequest {
-        tags,
-        name: get_pato_name(id.clone()).await.unwrap_or_default(),
-        gender: "".to_string(),
-    };
+pub async fn set_pato_info(id: String, data: String, method: &str) -> Result<(), Error> {
+    match call_update_method(AGENT_BATTERY_CANISTER, method, 
+        (id, data)).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            Err(e.into())
+        }
+    }
+}
+pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: String) -> Result<(), Error> {
     let _ = ensure_directory_exists(&format!("{}/ai/{}", XFILES_LOCAL_DIR, id));
+    let mut character = String::default();
+
+    set_pato_info(id.clone(), tags.join(","), "set_tags_of").await?;
 
     let local_name = "character.txt".to_string();
-    resp.character = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
 
     if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await{
+        let url = format!("{}{}/api/gen/character", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
+        let tag_request = CharacterGenRequest {
+            tags,
+            name: get_pato_name(id.clone()).await.unwrap_or_default(),
+            gender: "".to_string(),
+        };
         let client = reqwest::Client::new();
         let response = client
             .post(&url)
             .json(&json!(tag_request))
             .send()
             .await?;
-        let character = response.text().await?;
+        character = response.text().await?;
+
+        save_session_file(id.clone(), session_key.clone(), local_name.clone(), character.as_bytes().to_vec()).await;
+        set_pato_info(id.clone(), character.clone(), "set_character_of").await?;
 
         let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
         match OpenOptions::new().write(true).create(true).truncate(true).open(&saved_local_file){
             Ok(mut file) => {
                 file.write_all(character.as_bytes())?;
-                save_session_file(id.clone(), session_key.clone(), local_name.clone(), character.as_bytes().to_vec()).await;
             }
             Err(e) => {
                 println!("open file error: {}", e);
@@ -212,12 +195,11 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     }
 
     let url = format!("{}{}/api/gen/avatar", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
-    let avatar_prompt = format!("Design an avatar that represents a fictional character or persona for storytelling or role-playing purposes. Provide details about the character's appearance, personality traits, and backstory to create a visually compelling and immersive avatar: {}", resp.character);
+    let avatar_prompt = format!("Design an avatar that represents a fictional character or persona for storytelling or role-playing purposes. Provide details about the character's appearance, personality traits, and backstory to create a visually compelling and immersive avatar: {}", character);
     let avatar_request = ImageGenRequest {
         prompt: avatar_prompt,
     };
     let local_name = "avatar.png".to_string();
-    resp.avatar = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
 
     if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await{
         let client = reqwest::Client::new();
@@ -227,9 +209,13 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
             .send()
             .await?;
         let file_url = response.text().await?;
-        download_image(&file_url, &local_name).await?;
 
         let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
+        download_image(&file_url, &saved_local_file).await?;
+
+        let xfiles_path = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
+        set_pato_info(id.clone(), xfiles_path, "set_avatar_of").await?;
+
         match OpenOptions::new().read(true).open(&saved_local_file){
             Ok(mut file) => {
                 let mut content = String::new();
@@ -244,10 +230,9 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
 
     let url = format!("{}{}/api/gen/cover", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
     let avatar_request = ImageGenRequest {
-        prompt: resp.character.clone(),
+        prompt: character.clone(),
     };
     let local_name = "cover.png".to_string();
-    resp.cover = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
 
     if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await{
         let client = reqwest::Client::new();
@@ -257,9 +242,12 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
             .send()
             .await?;
         let file_url = response.text().await?;
-        download_image(&file_url, &local_name).await?;
+
+        let xfiles_path = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
+        set_pato_info(id.clone(), xfiles_path, "set_cover_of").await?;
 
         let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
+        download_image(&file_url, &saved_local_file).await?;
         match OpenOptions::new().read(true).open(&saved_local_file){
             Ok(mut file) => {
                 let mut content = String::new();
@@ -272,7 +260,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
         }
     }
 
-    Ok(resp)
+    Ok(())
 }
 
 pub async fn gen_image_save_in_canister(prompt: String, session_key: String, id: String) -> Result<String, Error> {

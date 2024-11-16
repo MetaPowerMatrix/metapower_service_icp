@@ -238,10 +238,10 @@ pub async fn request_submit_tags_with_proxy(
     id: String,
     session: String,
     tags: Vec<String>
-) -> Result<SubmitTagsResponse, Error> {
-    let answer = submit_tags_with_proxy(tags, session, id).await?;
+) -> Result<(), Error> {
+    let _ = submit_tags_with_proxy(tags, session, id).await?;
 
-    Ok(answer)
+    Ok(())
 }
 pub async fn get_pato_chat_messages(
     id: String,
@@ -272,7 +272,7 @@ pub async fn get_predefined_tags() -> Result<String, Error> {
         }
     }
 }
-pub async fn submit_tags(id: String, tags: Vec<String>) -> Result<String, Error> {
+pub async fn submit_tags(id: String, session: String, tags: Vec<String>) -> Result<String, Error> {
     let request = SubmitTagsRequest { id: id.clone(), tags  };
 
     let req = prepare_battery_call_args(

@@ -354,7 +354,7 @@ async fn portal_get_predefined_tags() -> actix_web::Result<impl Responder> {
     Ok(web::Json(resp))
 }
 async fn portal_submit_tags(
-    id: web::Path<String>,
+    id: web::Path<(String, String)>,
     tags: web::Json<Vec<String>>,
 ) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
@@ -362,7 +362,8 @@ async fn portal_submit_tags(
         code: String::from("200"),
     };
 
-    match submit_tags(id.into_inner(), tags.into_inner()).await {
+    let (id, session) = id.into_inner();
+    match submit_tags(id, session, tags.into_inner()).await {
         Ok(avatar_url) => resp.content = avatar_url,
         Err(e) => {
             resp.code = String::from("500");
@@ -377,7 +378,7 @@ async fn proxy_submit_tags(
     data: web::Path<(String, String)>,
     tags: web::Json<Vec<String>>,
 ) -> actix_web::Result<impl Responder> {
-    let mut resp = DataResponse {
+    let resp = DataResponse {
         content: String::from(""),
         code: String::from("200"),
     };
@@ -385,10 +386,9 @@ async fn proxy_submit_tags(
     let (id, session) = data.into_inner();
 
     match request_submit_tags_with_proxy(id, session, tags.into_inner()).await {
-        Ok(avatar_url) => resp.content = serde_json::to_string(&avatar_url).unwrap_or_default(),
+        Ok(_) => (),
         Err(e) => {
-            resp.code = String::from("500");
-            resp.content = e.to_string();
+            println!("request_submit_tags_with_proxy error: {}", e);
         }
     }
 
@@ -750,7 +750,7 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                     .route(web::post().to(portal_submit_tags)),
                             )
                             .service(
-                                web::resource("proxy/submit/tags/{id}")
+                                web::resource("proxy/submit/tags/{id}/{session}")
                                     .route(web::post().to(proxy_submit_tags)),
                             )
                             .service(
