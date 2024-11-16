@@ -88,16 +88,13 @@ async fn save_session_file(id: String, session_key: String, file_name: String, d
     
     match agent.update(&effective_canister_id, "upload_session_assets")
         .with_effective_canister_id(effective_canister_id)
-        .with_arg(Encode!(&id)?)
-        .with_arg(Encode!(&session_key)?)
-        .with_arg(Encode!(&file_name)?)
-        .with_arg(Encode!(&data)?)
+        .with_arg(Encode!(&id, &session_key, &file_name, &data)?)
         .await{
-        Ok(_) => Ok(()),
-        Err(e) => {
-            Err(e.into())
+            Ok(_) => Ok(()),
+            Err(e) => {
+                Err(e.into())
+            }
         }
-    }
 }
 
 pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, file_name: String, content: Vec<u8>) -> Result<String, Error> {
