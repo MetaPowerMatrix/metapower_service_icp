@@ -746,7 +746,7 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                     .route(web::post().to(portal_upload_image)),
                             )
                             .service(
-                                web::resource("submit/tags/{id}")
+                                web::resource("submit/tags/{id}/{session}")
                                     .route(web::post().to(portal_submit_tags)),
                             )
                             .service(
