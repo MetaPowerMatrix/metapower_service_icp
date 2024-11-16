@@ -6,9 +6,12 @@ use anyhow::anyhow;
 use anyhow::Error;
 use candid::CandidType;
 use candid::Decode;
+use candid::Encode;
+use candid::Principal;
 use metapower_framework::dao::crawler::download_image;
 use metapower_framework::ensure_directory_exists;
 use metapower_framework::icp::call_update_method;
+use metapower_framework::icp::init_icp_agent;
 use metapower_framework::icp::AGENT_BATTERY_CANISTER;
 use metapower_framework::icp::AGENT_SMITH_CANISTER;
 use metapower_framework::icp::NAIS_MATRIX_CANISTER;
@@ -79,12 +82,20 @@ pub async fn read_session_file(id: String, session_key: String, file_name: Strin
         }
     }
 }
-async fn save_session_file(id: String, session_key: String, file_name: String, data: Vec<u8>){
-    match call_update_method(NAIS_MATRIX_CANISTER, "upload_session_assets", 
-    (id, session_key, file_name, data, )).await {
-        Ok(_) => {}
+async fn save_session_file(id: String, session_key: String, file_name: String, data: Vec<u8>) -> Result<(), Error>{
+    let agent = init_icp_agent().await?;
+    let effective_canister_id = Principal::from_text(NAIS_MATRIX_CANISTER).unwrap();
+    
+    match agent.update(&effective_canister_id, "upload_session_assets")
+        .with_effective_canister_id(effective_canister_id)
+        .with_arg(Encode!(&id)?)
+        .with_arg(Encode!(&session_key)?)
+        .with_arg(Encode!(&file_name)?)
+        .with_arg(Encode!(&data)?)
+        .await{
+        Ok(_) => Ok(()),
         Err(e) => {
-            println!("save_session_file error: {}", e);
+            Err(e.into())
         }
     }
 }
@@ -99,7 +110,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
     if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await{
         let embedding_request = FileGenRequest{ content: String::from_utf8(content.clone()).unwrap_or_default() };
 
-        save_session_file(id.clone(), session_key.clone(), local_name.clone(), content).await;
+        save_session_file(id.clone(), session_key.clone(), local_name.clone(), content).await?;
 
         let client = reqwest::Client::new();
         let response = client
@@ -111,7 +122,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
         let embedding = response.bytes().await?;
         println!("embedding: {:?}", embedding);
         let embedding_file = local_name.clone() + ".embed";
-        save_session_file(id.clone(), session_key.clone(), embedding_file, embedding.to_vec()).await;
+        save_session_file(id.clone(), session_key.clone(), embedding_file, embedding.to_vec()).await?;
 
         let response = client
             .post(&url_summary)
@@ -123,7 +134,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
         println!("summary: {}", summary);
         let summary_file = local_name.clone() + ".sum";
         resp = summary.clone();
-        save_session_file(id.clone(), session_key.clone(), summary_file, summary.as_bytes().to_vec()).await;
+        save_session_file(id.clone(), session_key.clone(), summary_file, summary.as_bytes().to_vec()).await?;
     }
 
     Ok(resp)

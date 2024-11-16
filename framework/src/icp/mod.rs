@@ -59,7 +59,7 @@ pub struct NameRequest {
 }
 
 
-async fn init_icp_agent() -> Result<Agent, AgentError>{
+pub async fn init_icp_agent() -> Result<Agent, AgentError>{
     let agent: Agent = Agent::builder()
         .with_url(DEFAULT_IC_GATEWAY)
         .with_identity(create_identity(None))
