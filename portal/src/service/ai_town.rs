@@ -248,7 +248,7 @@ pub async fn get_pato_chat_messages(
     session: String,
 ) -> Result<String, Error> {
     let local_name = "chat_messages.txt".to_string();
-    let query_result = read_session_file(id, session, local_name).await;
+    let query_result = read_session_file(id, session, local_name).await?;
 
     Ok(from_utf8(&query_result).unwrap_or_default().to_string())
 }
@@ -257,7 +257,7 @@ pub async fn get_topic_chat_history(
     session: String,
 ) -> Result<String, Error> {
     let local_name = "chat_messages.txt".to_string();
-    let query_result = read_session_file(id, session, local_name).await;
+    let query_result = read_session_file(id, session, local_name).await?;
 
     Ok(from_utf8(&query_result).unwrap_or_default().to_string())
 }
@@ -413,12 +413,12 @@ pub async fn query_document_embeddings(
     sig: String,
     file_name: String,
 ) -> Result<String, Error> {
-    let query_result = read_session_file(id, sig, file_name).await;
+    let query_result = read_session_file(id, sig, file_name).await?;
 
     Ok(from_utf8(&query_result).unwrap_or_default().to_string())
 }
 pub async fn query_document_summary(id: String, sig: String, file_name: String) -> Result<String, Error> {
-    let query_result = read_session_file(id, sig, file_name).await;
+    let query_result = read_session_file(id, sig, file_name).await?;
 
     Ok(from_utf8(&query_result).unwrap_or_default().to_string())
 }
