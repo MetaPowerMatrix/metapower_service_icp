@@ -140,7 +140,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
             .send()
             .await?;
 
-        let summary = response.text().await?;
+        let summary: String = response.json().await?;
         println!("summary: {}", summary);
         let summary_file = local_name.clone() + ".sum";
         resp = summary.clone();
@@ -151,9 +151,11 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
 }
 pub async fn upload_image_save_in_canister(session_key: String, id: String, content: Vec<u8>) -> Result<String, Error> {
     let _ = ensure_directory_exists(&format!("{}/user/uploaded/{}", XFILES_LOCAL_DIR, id));
+    let url = format!("{}{}/api/gen/image/description", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
 
     let local_name = "upload.png".to_string();
     let resp = format!("{}/user/uploaded/{}/{}", XFILES_SERVER, id, local_name);
+    let mut desc = String::default();
 
     if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?{
         save_session_file(id.clone(), session_key.clone(), local_name.clone(), content.clone()).await?;
@@ -164,12 +166,25 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
                 file.write_all(&content)?;
             }
             Err(e) => {
-                println!("open file error: {}", e);
+                println!("write local file error: {}", e);
             }
         }
+
+        let embedding_request = FileGenRequest{ content: resp.clone() };
+        let client = reqwest::Client::new();
+        let response = client
+            .post(&url)
+            .json(&json!(embedding_request))
+            .send()
+            .await?;
+
+        desc = response.json().await?;
+        println!("image description: {:?}", desc);
+        let desc_file = local_name.clone() + ".desc";
+        save_session_file(id.clone(), session_key.clone(), desc_file, desc.as_bytes().to_vec()).await?;
     }
 
-    Ok(resp)
+    Ok(desc)
 }
 pub async fn set_pato_info(id: String, data: String, method: &str) -> Result<(), Error> {
     match call_update_method(AGENT_BATTERY_CANISTER, method, 
