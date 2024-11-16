@@ -81,7 +81,7 @@ pub async fn read_session_file(id: String, session_key: String, file_name: Strin
 }
 async fn save_session_file(id: String, session_key: String, file_name: String, data: Vec<u8>){
     match call_update_method(NAIS_MATRIX_CANISTER, "upload_session_assets", 
-    (id, session_key, file_name, data)).await {
+    (id, session_key, file_name, data, )).await {
         Ok(_) => {}
         Err(e) => {
             println!("save_session_file error: {}", e);
@@ -110,7 +110,8 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
 
         let embedding = response.bytes().await?;
         println!("embedding: {:?}", embedding);
-        save_session_file(id.clone(), session_key.clone(), local_name.clone(), embedding.to_vec()).await;
+        let embedding_file = local_name.clone() + ".embed";
+        save_session_file(id.clone(), session_key.clone(), embedding_file, embedding.to_vec()).await;
 
         let response = client
             .post(&url_summary)
@@ -120,25 +121,26 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
 
         let summary = response.text().await?;
         println!("summary: {}", summary);
+        let summary_file = local_name.clone() + ".sum";
         resp = summary.clone();
-        save_session_file(id.clone(), session_key.clone(), local_name.clone(), summary.as_bytes().to_vec()).await;
+        save_session_file(id.clone(), session_key.clone(), summary_file, summary.as_bytes().to_vec()).await;
     }
 
     Ok(resp)
 }
 pub async fn upload_image_save_in_canister(session_key: String, id: String, content: Vec<u8>) -> Result<String, Error> {
-    let mut resp = String::default();
+    let _ = ensure_directory_exists(&format!("{}/user/uploaded/{}", XFILES_LOCAL_DIR, id));
 
     let local_name = "upload.png".to_string();
+    let resp = format!("{}/user/uploaded/{}/{}", XFILES_SERVER, id, local_name);
+
     if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await{
-        resp = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
+        save_session_file(id.clone(), session_key.clone(), local_name.clone(), content.clone()).await;
 
         let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
-        let _ = ensure_directory_exists(&format!("{}/ai/{}", XFILES_LOCAL_DIR, id));
         match OpenOptions::new().write(true).create(true).truncate(true).open(&saved_local_file){
             Ok(mut file) => {
                 file.write_all(&content)?;
-                save_session_file(id.clone(), session_key.clone(), local_name.clone(), content).await;
             }
             Err(e) => {
                 println!("open file error: {}", e);
