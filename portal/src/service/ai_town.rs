@@ -220,7 +220,7 @@ pub async fn get_name_by_id(ids: Vec<String>) -> Result<String, Error> {
 }
 
 pub async fn archive_pato_session(id: String, session: String, content: String) -> Result<String, Error> {
-    let local_name = "chat_sessiom_messages.txt".to_string();
+    let local_name = "chat_messages.txt".to_string();
 
     upload_knowledge_save_in_canister(session, id, local_name, content.as_bytes().to_vec()).await
 }
@@ -239,7 +239,7 @@ pub async fn request_submit_tags_with_proxy(
     session: String,
     tags: Vec<String>
 ) -> Result<(), Error> {
-    let _ = submit_tags_with_proxy(tags, session, id).await?;
+    submit_tags_with_proxy(tags, session, id).await?;
 
     Ok(())
 }
@@ -247,7 +247,7 @@ pub async fn get_pato_chat_messages(
     id: String,
     session: String,
 ) -> Result<String, Error> {
-    let local_name = "chat_sessiom_messages.txt".to_string();
+    let local_name = "chat_messages.txt".to_string();
     let query_result = read_session_file(id, session, local_name).await;
 
     Ok(from_utf8(&query_result).unwrap_or_default().to_string())
@@ -256,7 +256,7 @@ pub async fn get_topic_chat_history(
     id: String,
     session: String,
 ) -> Result<String, Error> {
-    let local_name = "topic_chat_sessiom_messages.txt".to_string();
+    let local_name = "chat_messages.txt".to_string();
     let query_result = read_session_file(id, session, local_name).await;
 
     Ok(from_utf8(&query_result).unwrap_or_default().to_string())
@@ -273,7 +273,7 @@ pub async fn get_predefined_tags() -> Result<String, Error> {
     }
 }
 pub async fn submit_tags(id: String, session: String, tags: Vec<String>) -> Result<String, Error> {
-    let request = SubmitTagsRequest { id: id.clone(), tags  };
+    let request = SubmitTagsRequest { id: id.clone(), tags, session  };
 
     let req = prepare_battery_call_args(
         id,

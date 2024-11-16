@@ -140,6 +140,7 @@ pub struct UserActiveRequest {
 #[derive(Deserialize, Serialize, CandidType)]
 pub struct SubmitTagsRequest {
     pub id: String,
+    pub session: String,
     pub tags: Vec<String>,
 }
 
