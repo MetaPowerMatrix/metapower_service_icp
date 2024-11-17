@@ -116,7 +116,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
     let resp: String;
     let summary_file = local_name.clone() + ".sum";
 
-    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), desc_file.clone()).await.unwrap_or_default();
+    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), summary_file.clone()).await.unwrap_or_default();
 
     if !exists{
         let embedding_request = FileGenRequest{ content: String::from_utf8(content.clone()).unwrap_or_default() };
