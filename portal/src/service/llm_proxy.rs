@@ -15,11 +15,13 @@ use metapower_framework::icp::init_icp_agent;
 use metapower_framework::icp::AGENT_BATTERY_CANISTER;
 use metapower_framework::icp::AGENT_SMITH_CANISTER;
 use metapower_framework::icp::NAIS_MATRIX_CANISTER;
+use metapower_framework::icp::NAIS_VECTOR_CANISTER;
 use metapower_framework::XFILES_LOCAL_DIR;
 use metapower_framework::XFILES_SERVER;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use crate::service::PatoInfoResponse;
+use crate::VecDoc;
 
 pub const MAX_SAVE_BYTES: usize = 1024*1024*5;
 
@@ -107,6 +109,43 @@ async fn save_session_file(id: String, session_key: String, file_name: String, d
         }
 }
 
+pub async fn add_embedding(content: String, embeddings: Vec<f32>) -> Result<String, Error> {
+    let agent = init_icp_agent().await?;
+    let effective_canister_id = Principal::from_text(NAIS_VECTOR_CANISTER).unwrap();
+    let doc = VecDoc{
+        content,
+        embeddings,
+    };
+    match agent.update(&effective_canister_id, "add")
+        .with_effective_canister_id(effective_canister_id)
+        .with_arg(Encode!(&doc)?)
+        .await{
+            Ok(result) => {
+                Ok(Decode!(result.as_slice(), String).unwrap_or_default())
+            }
+            Err(e) => {
+                Err(e.into())
+            }
+        }
+}
+pub async fn get_content_embeddings(content: String) -> Result<Vec<f32>, Error>{
+    let embedding_request = FileGenRequest{ content };
+    let url_embedding = format!("{}{}/api/gen/embedding", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post(&url_embedding)
+        .json(&json!(embedding_request))
+        .send()
+        .await?;
+
+    let saved_bytes = response.bytes().await?;
+    let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
+    println!("embedding: {:?}", embedding);
+
+    Ok(embedding)
+}
+
 pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, file_name: String, content: Vec<u8>) -> Result<String, Error> {
     let _ = ensure_directory_exists(&format!("{}/ai/{}", XFILES_LOCAL_DIR, id));
     let url_embedding = format!("{}{}/api/gen/embedding", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
@@ -121,7 +160,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
     if !exists{
         let embedding_request = FileGenRequest{ content: String::from_utf8(content.clone()).unwrap_or_default() };
 
-        save_session_file(id.clone(), session_key.clone(), local_name.clone(), content).await?;
+        save_session_file(id.clone(), session_key.clone(), local_name.clone(), content.clone()).await?;
 
         let client = reqwest::Client::new();
         let response = client
@@ -131,8 +170,9 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
             .await?;
 
         let saved_bytes = response.bytes().await?;
-        // let embedding: Vec<f64> = serde_json::from_slice(&saved_bytes)?;
+        // let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
         // println!("embedding: {:?}", embedding);
+        // add_embedding(String::from_utf8(content.clone()).unwrap_or_default(), embedding).await?;
         let embedding_file = local_name.clone() + ".embed";
         save_session_file(id.clone(), session_key.clone(), embedding_file, saved_bytes.to_vec()).await?;
 

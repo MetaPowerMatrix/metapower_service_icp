@@ -30,9 +30,18 @@ dfx identity whoami --network ic
 dfx ledger account-id --network ic
 dfx identity use metapowermatrix
 dfx identity new metapowermatrix
-dfx canister call agent hi
-dfx canister call matrix initialize 'architecture'
 dfx canister create battery --network ic --subnet brlsh-zidhj-3yy3e-6vqbz-7xnih-xeq2l-as5oc-g32c4-i5pdn-2wwof-oae
+
+dfx canister call matrix initialize 'architecture'  --network ic
+dfx canister call matrix setup_agent_canister "'smith','eegr3-kiaaa-aaaai-acuaa-cai'"  --network ic
+dfx canister call agent initialize 'smith'  --network ic
+dfx canister call agent setup_battery_canister 'edhxp-hqaaa-aaaai-acuaq-cai'  --network ic
+dfx canister call battery initialize "'fvcqf-aqaaa-aaaak-ak5oa-cai','eegr3-kiaaa-aaaai-acuaa-cai'"  --network ic
+
+dfx canister call matrix hi  --network ic
+dfx canister call agent hi  --network ic
+dfx canister call battery hi  --network ic
+dfx canister call arcmindvectordb size  --network ic
 
 candid-extractor target/wasm32-unknown-unknown/release/agent_canister_opt.wasm > src/agent/agent_canister.did
 candid-extractor target/wasm32-unknown-unknown/release/matrix_canister_opt.wasm > src/matrix/matrix_canister.did

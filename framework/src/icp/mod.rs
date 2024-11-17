@@ -11,6 +11,7 @@ pub const PEM_FILE: &str = "identity.pem";
 pub const AGENT_SMITH_CANISTER: &str = "eegr3-kiaaa-aaaai-acuaa-cai";
 pub const NAIS_MATRIX_CANISTER: &str = "fvcqf-aqaaa-aaaak-ak5oa-cai";
 pub const AGENT_BATTERY_CANISTER: &str = "edhxp-hqaaa-aaaai-acuaq-cai";
+pub const NAIS_VECTOR_CANISTER: &str = "bd7wu-niaaa-aaaao-a3vba-cai";
 
 #[derive(Deserialize, CandidType)]
 pub struct SnIdPaire {

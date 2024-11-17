@@ -9,6 +9,7 @@ use actix_web::{
     http::header::ContentType,
     middleware, web, App, HttpResponse, HttpServer, Responder,
 };
+use candid::CandidType;
 use futures::StreamExt;
 use futures::TryStreamExt;
 use metapower_framework::{
@@ -42,11 +43,23 @@ struct UserInfo {
     pub personality: String,
 }
 
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
+pub enum VecQuery {
+    Embeddings(Vec<f32>),
+}
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PlainDoc {
+    pub content: String,
+}
+#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
+pub struct VecDoc {
+    pub content: String,
+    pub embeddings: Vec<f32>,
+}
+
 #[derive(Deserialize, Debug)]
-struct EmbedInfo {
-    id: String,
-    sig: String,
-    query: String,
+struct QueryEmbedInfo {
+    input: String,
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -269,7 +282,8 @@ async fn portal_upload_knowledge(mut payload: Multipart) -> actix_web::Result<im
 
     if has_file_uploaded {
         let session = format!("{:x}", hasher.finalize());
-        match upload_knowledge_save_in_canister(session, id,  filename, file_bytes).await
+        let filename_saved = "content.txt".to_string();
+        match upload_knowledge_save_in_canister(session, id,  filename_saved, file_bytes).await
         {
             Ok(url) => {
                 resp.content = url;
@@ -477,7 +491,7 @@ async fn portal_upload_image(
 
     Ok(web::Json(resp))
 }
-async fn portal_query_embeddings(data: web::Json<EmbedInfo>) -> actix_web::Result<impl Responder> {
+async fn portal_query_embeddings(data: web::Json<QueryEmbedInfo>) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
         code: String::from("200"),
@@ -486,7 +500,7 @@ async fn portal_query_embeddings(data: web::Json<EmbedInfo>) -> actix_web::Resul
     let embed = data.into_inner();
     println!("embed: {:?}", embed);
 
-    match service::ai_town::query_document_embeddings(embed.id, embed.sig, embed.query).await {
+    match service::ai_town::query_document_embeddings(embed.input).await {
         Ok(answer) => {
             resp.content = answer;
         }

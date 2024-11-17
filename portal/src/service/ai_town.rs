@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Error};
 use candid::{CandidType, Decode, Encode, Principal};
 use metapower_framework::icp::{
-    call_update_method, init_icp_agent, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER, NAIS_MATRIX_CANISTER
+    call_update_method, init_icp_agent, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER, NAIS_MATRIX_CANISTER, NAIS_VECTOR_CANISTER
 };
 use metapower_framework::{log, PatoInfoResp, SubmitTagsResponse};
 use metapower_framework::{
@@ -15,9 +15,9 @@ use std::io::Write;
 use crate::service::{
     CreateResonse, HotTopicResponse, KolRelations, NameResponse, PatoInfoResponse, SharedKnowledgesResponse, SimpleResponse, TokenResponse
 };
-use crate::KolInfo;
+use crate::{KolInfo, PlainDoc, VecDoc, VecQuery};
 
-use super::llm_proxy::{gen_image_save_in_canister, read_session_file, submit_tags_with_proxy, upload_knowledge_save_in_canister};
+use super::llm_proxy::{gen_image_save_in_canister, get_content_embeddings, read_session_file, submit_tags_with_proxy, upload_knowledge_save_in_canister};
 use super::{
     BecomeKolRequest, JoinKolRoomRequest, SubmitTagsRequest,
 };
@@ -322,6 +322,24 @@ pub async fn refresh_pato_auth_token(id: String) -> Result<String, Error> {
 
     Ok(token)
 }
+pub async fn query_embedding(embeddings: Vec<f32>) -> Result<Option<Vec<PlainDoc>>, Error> {
+    let agent = init_icp_agent().await?;
+    let effective_canister_id = Principal::from_text(NAIS_VECTOR_CANISTER).unwrap();
+    let query = VecQuery::Embeddings(embeddings.clone());
+    let size = embeddings.len();
+
+    match agent.query(&effective_canister_id, "search")
+        .with_effective_canister_id(effective_canister_id)
+        .with_arg(Encode!(&query, &size)?)
+        .await{
+            Ok(result) => {
+                Ok(Decode!(result.as_slice(), Option<Vec<PlainDoc>>).unwrap_or_default())
+            }
+            Err(e) => {
+                Err(e.into())
+            }
+        }
+}
 pub async fn query_pato_kol_token(id: String) -> Result<TokenResponse, Error> {
     match call_update_method(AGENT_SMITH_CANISTER, "query_pato_kol_token", id).await {
         Ok(result) => {
@@ -421,13 +439,14 @@ pub async fn follow_kol(kol: String, follower: String, from: String) -> Result<(
     Ok(())
 }
 pub async fn query_document_embeddings(
-    id: String,
-    sig: String,
-    file_name: String,
+    input: String,
 ) -> Result<String, Error> {
-    let query_result = read_session_file(id, sig, file_name).await?;
+    let embeddings = get_content_embeddings(input).await?;
+    let result = query_embedding(embeddings).await?.unwrap_or(vec![]);
 
-    Ok(from_utf8(&query_result.0).unwrap_or_default().to_string())
+    let resp = result.iter().map(|doc| doc.content.clone()).collect::<Vec<String>>().join("\n");
+
+    Ok(resp)
 }
 pub async fn query_document_summary(id: String, sig: String, file_name: String) -> Result<String, Error> {
     let query_result = read_session_file(id, sig, file_name).await?;
