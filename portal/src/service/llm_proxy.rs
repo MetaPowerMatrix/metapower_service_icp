@@ -114,8 +114,9 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
 
     let local_name = file_name;
     let resp: String;
+    let summary_file = local_name.clone() + ".sum";
 
-    let (exists, data) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let (exists, data) = check_session_file(id.clone(), session_key.clone(), summary_file.clone()).await?;
 
     if !exists{
         let embedding_request = FileGenRequest{ content: String::from_utf8(content.clone()).unwrap_or_default() };
@@ -143,7 +144,6 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
 
         let summary: String = response.json().await?;
         println!("summary: {}", summary);
-        let summary_file = local_name.clone() + ".sum";
         resp = summary.clone();
         save_session_file(id.clone(), session_key.clone(), summary_file, summary.as_bytes().to_vec()).await?;
     }else{
@@ -159,8 +159,9 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
     let local_name = "upload.png".to_string();
     let resp = format!("{}/user/uploaded/{}/{}", XFILES_SERVER, id, local_name);
     let desc: String;
+    let desc_file = local_name.clone() + ".desc";
 
-    let (exists, data) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let (exists, data) = check_session_file(id.clone(), session_key.clone(), desc_file.clone()).await?;
 
     if !exists{
         save_session_file(id.clone(), session_key.clone(), local_name.clone(), content.clone()).await?;
@@ -185,7 +186,6 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
 
         desc = response.json().await?;
         println!("image description: {:?}", desc);
-        let desc_file = local_name.clone() + ".desc";
         save_session_file(id.clone(), session_key.clone(), desc_file, desc.as_bytes().to_vec()).await?;
     }else{
         desc = String::from_utf8(data).unwrap_or_default();
