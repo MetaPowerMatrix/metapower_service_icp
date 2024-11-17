@@ -1,8 +1,7 @@
 use anyhow::{anyhow, Error};
-use candid::{CandidType, Decode};
+use candid::{CandidType, Decode, Encode, Principal};
 use metapower_framework::icp::{
-    call_update_method, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER,
-    NAIS_MATRIX_CANISTER,
+    call_update_method, init_icp_agent, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER, NAIS_MATRIX_CANISTER
 };
 use metapower_framework::{log, PatoInfoResp, SubmitTagsResponse};
 use metapower_framework::{
@@ -219,10 +218,23 @@ pub async fn get_name_by_id(ids: Vec<String>) -> Result<String, Error> {
     }
 }
 
-pub async fn archive_pato_session(id: String, session: String, content: String) -> Result<String, Error> {
-    let local_name = "chat_messages.txt".to_string();
+pub async fn archive_pato_session(id: String, session_key: String, content: String) -> Result<String, Error> {
+    let local_name = "chat_messages.json".to_string();
 
-    upload_knowledge_save_in_canister(session, id, local_name, content.as_bytes().to_vec()).await
+    let agent = init_icp_agent().await?;
+    let effective_canister_id = Principal::from_text(AGENT_BATTERY_CANISTER).unwrap();
+
+    match agent.update(&effective_canister_id, "set_session_of")
+        .with_effective_canister_id(effective_canister_id)
+        .with_arg(Encode!(&id, &session_key)?)
+        .await{
+            Ok(_) => (),
+            Err(e) => {
+                println!("{}", e);
+            }
+        }
+
+    upload_knowledge_save_in_canister(session_key, id, local_name, content.as_bytes().to_vec()).await
 }
 
 pub async fn request_generate_image(

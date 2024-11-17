@@ -214,7 +214,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
 
     let local_name = "character.txt".to_string();
 
-    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await.unwrap_or_default();
 
     if !exists{
         let url = format!("{}{}/api/gen/character", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
@@ -254,7 +254,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     };
     let local_name = "avatar.png".to_string();
 
-    let (exists, _, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await.unwrap_or_default();
 
     if !exists{
         let client = reqwest::Client::new();
@@ -289,7 +289,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     };
     let local_name = "cover.png".to_string();
 
-    let (exists, _, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await.unwrap_or_default();
 
     if !exists{
         let client = reqwest::Client::new();
@@ -321,15 +321,15 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
 }
 
 pub async fn gen_image_save_in_canister(prompt: String, session_key: String, id: String) -> Result<String, Error> {
-    let mut resp = String::default();
-
     let url = format!("{}{}/api/gen/image", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
     let avatar_request = ImageGenRequest {
         prompt,
     };
     let local_name = "image.png".to_string();
-    let (exists, _, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let saved_local_file = format!("{}/ai/{}/{}/{}", XFILES_LOCAL_DIR, id, session_key, local_name);
+    let resp = format!("{}/ai/{}/{}/{}", XFILES_SERVER, id, session_key, local_name);
 
+    let (exists, _, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
     if !exists{
         let client = reqwest::Client::new();
         let response = client
@@ -338,11 +338,8 @@ pub async fn gen_image_save_in_canister(prompt: String, session_key: String, id:
             .send()
             .await?;
         let file_url = response.text().await?;
-        download_image(&file_url, &local_name).await?;
+        download_image(&file_url, &saved_local_file).await?;
 
-        resp = format!("{}/ai/{}/{}/{}", XFILES_SERVER, id, session_key, local_name);
-
-        let saved_local_file = format!("{}/ai/{}/{}/{}", XFILES_LOCAL_DIR, id, session_key, local_name);
         match OpenOptions::new().read(true).open(&saved_local_file){
             Ok(mut file) => {
                 let mut content = String::new();
