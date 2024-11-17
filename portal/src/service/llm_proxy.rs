@@ -19,7 +19,6 @@ use metapower_framework::XFILES_LOCAL_DIR;
 use metapower_framework::XFILES_SERVER;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use serde_json::Value;
 use crate::service::PatoInfoResponse;
 
 pub const MAX_SAVE_BYTES: usize = 1024*1024*5;
@@ -61,20 +60,19 @@ async fn get_pato_name(id: String) -> Result<String, Error>{
         Err(e) => Err(anyhow!("request_pato_info error: {}", e)),
     }
 }
-async fn check_session_file(id: String, session_key: String, file_name: String) -> Result<bool, Error>{
+async fn check_session_file(id: String, session_key: String, file_name: String) -> Result<(bool,Vec<u8>), Error>{
     let agent = init_icp_agent().await?;
     let effective_canister_id = Principal::from_text(NAIS_MATRIX_CANISTER).unwrap();
-    
+
     match agent.update(&effective_canister_id, "check_session_assets")
         .with_effective_canister_id(effective_canister_id)
         .with_arg(Encode!(&id, &session_key, &file_name)?)
         .await{
             Ok(result) => {
-                Ok(Decode!(result.as_slice(), bool).unwrap_or_default())
+                Ok(Decode!(result.as_slice(), (bool,Vec<u8>,)).unwrap_or_default())
             }
             Err(e) => {
-                println!("check session file error: {}", e);
-                Ok(false)
+                Err(anyhow!(e.to_string()))
             }
     }
 }
@@ -115,8 +113,11 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
     let url_summary = format!("{}{}/api/gen/summary", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
 
     let local_name = file_name;
-    let mut resp: String = "文件已经上传".to_string();
-    if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?{
+    let resp: String;
+
+    let (exists, data) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+
+    if !exists{
         let embedding_request = FileGenRequest{ content: String::from_utf8(content.clone()).unwrap_or_default() };
 
         save_session_file(id.clone(), session_key.clone(), local_name.clone(), content).await?;
@@ -145,6 +146,8 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
         let summary_file = local_name.clone() + ".sum";
         resp = summary.clone();
         save_session_file(id.clone(), session_key.clone(), summary_file, summary.as_bytes().to_vec()).await?;
+    }else{
+        resp = String::from_utf8(data).unwrap_or_default();
     }
 
     Ok(resp)
@@ -155,9 +158,11 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
 
     let local_name = "upload.png".to_string();
     let resp = format!("{}/user/uploaded/{}/{}", XFILES_SERVER, id, local_name);
-    let mut desc = String::default();
+    let desc: String;
 
-    if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?{
+    let (exists, data) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+
+    if !exists{
         save_session_file(id.clone(), session_key.clone(), local_name.clone(), content.clone()).await?;
 
         let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
@@ -182,6 +187,8 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
         println!("image description: {:?}", desc);
         let desc_file = local_name.clone() + ".desc";
         save_session_file(id.clone(), session_key.clone(), desc_file, desc.as_bytes().to_vec()).await?;
+    }else{
+        desc = String::from_utf8(data).unwrap_or_default();
     }
 
     Ok(desc)
@@ -197,13 +204,15 @@ pub async fn set_pato_info(id: String, data: String, method: &str) -> Result<(),
 }
 pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: String) -> Result<(), Error> {
     let _ = ensure_directory_exists(&format!("{}/ai/{}", XFILES_LOCAL_DIR, id));
-    let mut character = String::default();
+    let character: String;
 
     set_pato_info(id.clone(), tags.join(","), "set_tags_of").await?;
 
     let local_name = "character.txt".to_string();
 
-    if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?{
+    let (exists, data) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+
+    if !exists{
         let url = format!("{}{}/api/gen/character", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
         let tag_request = CharacterGenRequest {
             tags,
@@ -230,6 +239,8 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
                 println!("open file error: {}", e);
             }                
         }
+    }else{
+        character = String::from_utf8(data).unwrap_or_default();
     }
 
     let url = format!("{}{}/api/gen/avatar", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
@@ -239,7 +250,9 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     };
     let local_name = "avatar.png".to_string();
 
-    if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?{
+    let (exists, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+
+    if !exists{
         let client = reqwest::Client::new();
         let response = client
             .post(&url)
@@ -272,7 +285,9 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     };
     let local_name = "cover.png".to_string();
 
-    if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?{
+    let (exists, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+
+    if !exists{
         let client = reqwest::Client::new();
         let response = client
             .post(&url)
@@ -309,7 +324,9 @@ pub async fn gen_image_save_in_canister(prompt: String, session_key: String, id:
         prompt,
     };
     let local_name = "image.png".to_string();
-    if !check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?{
+    let (exists, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+
+    if !exists{
         let client = reqwest::Client::new();
         let response = client
             .post(&url)
