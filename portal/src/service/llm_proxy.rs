@@ -74,7 +74,7 @@ async fn check_session_file(id: String, session_key: String, file_name: String) 
             Err(e) => {
                 Err(anyhow!(e.to_string()))
             }
-    }
+        }
 }
 pub async fn read_session_file(id: String, session_key: String, file_name: String) -> Result<Vec<u8>, Error>{
     let agent = init_icp_agent().await?;
@@ -162,8 +162,9 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
     let desc_file = local_name.clone() + ".desc";
 
     let (exists, data) = check_session_file(id.clone(), session_key.clone(), desc_file.clone()).await?;
-
+    println!("check_session_file: {:?} {:?}", exists, data);
     if !exists{
+        println!("upload image save in canister");
         save_session_file(id.clone(), session_key.clone(), local_name.clone(), content.clone()).await?;
 
         let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
@@ -188,6 +189,7 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
         println!("image description: {:?}", desc);
         save_session_file(id.clone(), session_key.clone(), desc_file, desc.as_bytes().to_vec()).await?;
     }else{
+        println!("image description exists");
         desc = String::from_utf8(data).unwrap_or_default();
     }
 
