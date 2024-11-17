@@ -129,8 +129,8 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
             .await?;
 
         let saved_bytes = response.bytes().await?;
-        let embedding: Vec<f64> = serde_json::from_slice(&saved_bytes)?;
-        println!("embedding: {:?}", embedding);
+        // let embedding: Vec<f64> = serde_json::from_slice(&saved_bytes)?;
+        // println!("embedding: {:?}", embedding);
         let embedding_file = local_name.clone() + ".embed";
         save_session_file(id.clone(), session_key.clone(), embedding_file, saved_bytes.to_vec()).await?;
 
