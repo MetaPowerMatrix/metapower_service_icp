@@ -60,7 +60,7 @@ async fn get_pato_name(id: String) -> Result<String, Error>{
         Err(e) => Err(anyhow!("request_pato_info error: {}", e)),
     }
 }
-async fn check_session_file(id: String, session_key: String, file_name: String) -> Result<(bool,Vec<u8>), Error>{
+async fn check_session_file(id: String, session_key: String, file_name: String) -> Result<(bool,Vec<u8>, u64), Error>{
     let agent = init_icp_agent().await?;
     let effective_canister_id = Principal::from_text(NAIS_MATRIX_CANISTER).unwrap();
 
@@ -69,7 +69,7 @@ async fn check_session_file(id: String, session_key: String, file_name: String) 
         .with_arg(Encode!(&id, &session_key, &file_name)?)
         .await{
             Ok(result) => {
-                Ok(Decode!(result.as_slice(), (bool,Vec<u8>,)).unwrap_or_default())
+                Ok(Decode!(result.as_slice(), (bool,Vec<u8>,u64,)).unwrap_or_default())
             }
             Err(e) => {
                 Err(anyhow!(e.to_string()))
@@ -116,7 +116,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
     let resp: String;
     let summary_file = local_name.clone() + ".sum";
 
-    let (exists, data) = check_session_file(id.clone(), session_key.clone(), summary_file.clone()).await?;
+    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), summary_file.clone()).await?;
 
     if !exists{
         let embedding_request = FileGenRequest{ content: String::from_utf8(content.clone()).unwrap_or_default() };
@@ -163,7 +163,7 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
 
     println!("session_key: {}", session_key);
 
-    let (exists, data) = check_session_file(id.clone(), session_key.clone(), desc_file.clone()).await?;
+    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), desc_file.clone()).await?;
     println!("check_session_file: {:?} {:?}", exists, data);
     if !exists{
         println!("upload image save in canister");
@@ -214,7 +214,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
 
     let local_name = "character.txt".to_string();
 
-    let (exists, data) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
 
     if !exists{
         let url = format!("{}{}/api/gen/character", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
@@ -254,7 +254,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     };
     let local_name = "avatar.png".to_string();
 
-    let (exists, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let (exists, _, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
 
     if !exists{
         let client = reqwest::Client::new();
@@ -289,7 +289,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     };
     let local_name = "cover.png".to_string();
 
-    let (exists, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let (exists, _, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
 
     if !exists{
         let client = reqwest::Client::new();
@@ -328,7 +328,7 @@ pub async fn gen_image_save_in_canister(prompt: String, session_key: String, id:
         prompt,
     };
     let local_name = "image.png".to_string();
-    let (exists, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
+    let (exists, _, _) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await?;
 
     if !exists{
         let client = reqwest::Client::new();
