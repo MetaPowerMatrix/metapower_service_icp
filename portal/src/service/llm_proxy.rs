@@ -69,7 +69,7 @@ async fn check_session_file(id: String, session_key: String, file_name: String) 
         .with_arg(Encode!(&id, &session_key, &file_name)?)
         .await{
             Ok(result) => {
-                Ok(Decode!(result.as_slice(), (bool,Vec<u8>,u64,)).unwrap_or_default())
+                Ok(Decode!(result.as_slice(), (bool,Vec<u8>,u64,))?)
             }
             Err(e) => {
                 Err(anyhow!(e.to_string()))
