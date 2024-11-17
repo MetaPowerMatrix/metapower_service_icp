@@ -69,14 +69,14 @@ async fn check_session_file(id: String, session_key: String, file_name: String) 
         .with_arg(Encode!(&id, &session_key, &file_name)?)
         .await{
             Ok(result) => {
-                Ok(Decode!(result.as_slice(), (bool,Vec<u8>,u64,))?)
+                Ok(Decode!(result.as_slice(), bool, Vec<u8>, u64)?)
             }
             Err(e) => {
                 Err(anyhow!(e.to_string()))
             }
         }
 }
-pub async fn read_session_file(id: String, session_key: String, file_name: String) -> Result<Vec<u8>, Error>{
+pub async fn read_session_file(id: String, session_key: String, file_name: String) -> Result<(Vec<u8>, u64), Error>{
     let agent = init_icp_agent().await?;
     let effective_canister_id = Principal::from_text(NAIS_MATRIX_CANISTER).unwrap();
     
@@ -85,7 +85,7 @@ pub async fn read_session_file(id: String, session_key: String, file_name: Strin
         .with_arg(Encode!(&id, &session_key, &file_name)?)
         .await{
             Ok(result) => {
-                Ok(Decode!(result.as_slice(), Vec<u8>).unwrap_or_default())
+                Ok(Decode!(result.as_slice(), Vec<u8>, u64).unwrap_or_default())
             }
             Err(e) => {
                 Err(e.into())

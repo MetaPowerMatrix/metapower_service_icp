@@ -250,7 +250,7 @@ pub async fn get_pato_chat_messages(
     let local_name = "chat_messages.txt".to_string();
     let query_result = read_session_file(id, session, local_name).await?;
 
-    Ok(from_utf8(&query_result).unwrap_or_default().to_string())
+    Ok(from_utf8(&query_result.0).unwrap_or_default().to_string())
 }
 pub async fn get_topic_chat_history(
     id: String,
@@ -259,7 +259,7 @@ pub async fn get_topic_chat_history(
     let local_name = "chat_messages.txt".to_string();
     let query_result = read_session_file(id, session, local_name).await?;
 
-    Ok(from_utf8(&query_result).unwrap_or_default().to_string())
+    Ok(from_utf8(&query_result.0).unwrap_or_default().to_string())
 }
 pub async fn get_predefined_tags() -> Result<String, Error> {
     match call_update_method(AGENT_SMITH_CANISTER, "request_predefined_tags", ()).await {
@@ -415,10 +415,10 @@ pub async fn query_document_embeddings(
 ) -> Result<String, Error> {
     let query_result = read_session_file(id, sig, file_name).await?;
 
-    Ok(from_utf8(&query_result).unwrap_or_default().to_string())
+    Ok(from_utf8(&query_result.0).unwrap_or_default().to_string())
 }
 pub async fn query_document_summary(id: String, sig: String, file_name: String) -> Result<String, Error> {
     let query_result = read_session_file(id, sig, file_name).await?;
 
-    Ok(from_utf8(&query_result).unwrap_or_default().to_string())
+    Ok(from_utf8(&query_result.0).unwrap_or_default().to_string())
 }
