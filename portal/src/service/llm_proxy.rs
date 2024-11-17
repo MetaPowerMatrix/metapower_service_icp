@@ -116,7 +116,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
     let resp: String;
     let summary_file = local_name.clone() + ".sum";
 
-    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), summary_file.clone()).await?;
+    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), desc_file.clone()).await.unwrap_or_default();
 
     if !exists{
         let embedding_request = FileGenRequest{ content: String::from_utf8(content.clone()).unwrap_or_default() };
@@ -163,8 +163,8 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
 
     println!("session_key: {}", session_key);
 
-    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), desc_file.clone()).await?;
-    println!("check_session_file: {:?} {:?}", exists, data);
+    let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), desc_file.clone()).await.unwrap_or_default();
+    println!("check_session_file: {:?} {:?} {}", exists, data, size);
     if !exists{
         println!("upload image save in canister");
         save_session_file(id.clone(), session_key.clone(), local_name.clone(), content.clone()).await?;
