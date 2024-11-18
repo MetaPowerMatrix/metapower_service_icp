@@ -394,7 +394,7 @@ pub async fn gen_image_save_in_canister(prompt: String, session_key: String, id:
             .json(&json!(avatar_request))
             .send()
             .await?;
-        let file_url = response.text().await?;
+        let file_url: String = response.json().await?;
         download_image(&file_url, &saved_local_file).await?;
 
         match OpenOptions::new().read(true).open(&saved_local_file){
