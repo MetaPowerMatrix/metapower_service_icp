@@ -407,7 +407,7 @@ async fn proxy_submit_tags(
     data: web::Path<(String, String)>,
     tags: web::Json<Vec<String>>,
 ) -> actix_web::Result<impl Responder> {
-    let resp = DataResponse {
+    let mut resp = DataResponse {
         content: String::from(""),
         code: String::from("200"),
     };
@@ -418,6 +418,7 @@ async fn proxy_submit_tags(
         Ok(_) => (),
         Err(e) => {
             println!("request_submit_tags_with_proxy error: {}", e);
+            resp.content = e.to_string();
         }
     }
 

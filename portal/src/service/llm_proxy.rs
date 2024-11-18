@@ -244,13 +244,18 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
     Ok(desc)
 }
 pub async fn set_pato_info(id: String, data: String, method: &str) -> Result<(), Error> {
-    match call_update_method(AGENT_BATTERY_CANISTER, method, 
-        (id, data)).await {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            Err(e.into())
+    let agent = init_icp_agent().await?;
+    let effective_canister_id = Principal::from_text(AGENT_BATTERY_CANISTER).unwrap();
+    
+    match agent.update(&effective_canister_id, method)
+        .with_effective_canister_id(effective_canister_id)
+        .with_arg(Encode!(&id, &data)?)
+        .await{
+            Ok(_) => Ok(()),
+            Err(e) => {
+                Err(e.into())
+            }
         }
-    }
 }
 pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: String) -> Result<(), Error> {
     let _ = ensure_directory_exists(&format!("{}/ai/{}", XFILES_LOCAL_DIR, id));
@@ -290,6 +295,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
             }                
         }
     }else{
+        println!("character exists");
         character = String::from_utf8(data).unwrap_or_default();
     }
 
@@ -303,6 +309,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await.unwrap_or_default();
 
     if !exists{
+        println!("avatar not exists");
         let client = reqwest::Client::new();
         let response = client
             .post(&url)
@@ -338,6 +345,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     let (exists, data, size) = check_session_file(id.clone(), session_key.clone(), local_name.clone()).await.unwrap_or_default();
 
     if !exists{
+        println!("cover not exists");
         let client = reqwest::Client::new();
         let response = client
             .post(&url)
