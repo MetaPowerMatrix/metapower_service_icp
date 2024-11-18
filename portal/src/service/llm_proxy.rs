@@ -170,9 +170,14 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
             .await?;
 
         let saved_bytes = response.bytes().await?;
-        // let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
-        // println!("embedding: {:?}", embedding);
-        // add_embedding(String::from_utf8(content.clone()).unwrap_or_default(), embedding).await?;
+        let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
+        println!("embedding: {:?}", embedding);
+        match add_embedding(String::from_utf8(content.clone()).unwrap_or_default(), embedding).await{
+            Ok(_) => {}
+            Err(e) => {
+                println!("add_embedding error: {}", e);
+            }
+        };
         let embedding_file = local_name.clone() + ".embed";
         save_session_file(id.clone(), session_key.clone(), embedding_file, saved_bytes.to_vec()).await?;
 
@@ -187,6 +192,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
         resp = summary.clone();
         save_session_file(id.clone(), session_key.clone(), summary_file, summary.as_bytes().to_vec()).await?;
     }else{
+        println!("summary exists");
         resp = String::from_utf8(data).unwrap_or_default();
     }
 
