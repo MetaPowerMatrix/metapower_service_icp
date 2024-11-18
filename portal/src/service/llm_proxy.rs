@@ -326,9 +326,9 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
 
         match OpenOptions::new().read(true).open(&saved_local_file){
             Ok(mut file) => {
-                let mut content = String::new();
-                file.read_to_string(&mut content)?;
-                save_session_file(id.clone(), session_key.clone(), local_name, content.as_bytes().to_vec()).await?;
+                let mut content: Vec<u8> = Vec::new();
+                file.read_to_end(&mut content)?;
+                save_session_file(id.clone(), session_key.clone(), local_name, content).await?;
             }
             Err(e) => {
                 println!("open file error: {}", e);
@@ -361,9 +361,9 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
         download_image(&file_url, &saved_local_file).await?;
         match OpenOptions::new().read(true).open(&saved_local_file){
             Ok(mut file) => {
-                let mut content = String::new();
-                file.read_to_string(&mut content)?;
-                save_session_file(id, session_key, local_name, content.as_bytes().to_vec()).await?;
+                let mut content: Vec<u8> = Vec::new();
+                file.read_to_end(&mut content)?;
+                save_session_file(id, session_key, local_name, content).await?;
             }
             Err(e) => {
                 println!("open file error: {}", e);
