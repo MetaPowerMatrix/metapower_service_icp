@@ -43,6 +43,9 @@ dfx canister call agent hi  --network ic
 dfx canister call battery hi  --network ic
 dfx canister call arcmindvectordb size  --network ic
 
+dfx cycles top-up matrix 1T --network ic
+dfx canister status agent --network ic
+
 candid-extractor target/wasm32-unknown-unknown/release/agent_canister_opt.wasm > src/agent/agent_canister.did
 candid-extractor target/wasm32-unknown-unknown/release/matrix_canister_opt.wasm > src/matrix/matrix_canister.did
 candid-extractor target/wasm32-unknown-unknown/release/battery_canister_opt.wasm > src/battery/battery_canister.did

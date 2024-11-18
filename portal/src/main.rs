@@ -286,11 +286,14 @@ async fn portal_upload_knowledge(mut payload: Multipart) -> actix_web::Result<im
         
         let header: [u8; 4] = file_bytes.as_slice()[0..4].try_into().unwrap_or_default();
         if &header == b"%PDF" {
-            println!("pdf file detected");
             let content = pdf_extract::extract_text_from_mem(&file_bytes).unwrap_or_default();
-            let mut hasher = sha1::Sha1::new();
-            hasher.update(&content);
-            session = format!("{:x}", hasher.finalize());
+            println!("pdf file detected: {}", content.len());
+            if !content.is_empty() {
+                let mut hasher = sha1::Sha1::new();
+                hasher.update(&content);
+                session = format!("{:x}", hasher.finalize());
+                file_bytes = content.as_bytes().to_vec();    
+            }
         }
         
         match upload_knowledge_save_in_canister(session, id,  filename_saved, file_bytes).await
