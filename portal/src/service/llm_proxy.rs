@@ -280,7 +280,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
             .json(&json!(tag_request))
             .send()
             .await?;
-        character = response.text().await?;
+        character = response.json().await?;
 
         save_session_file(id.clone(), session_key.clone(), local_name.clone(), character.as_bytes().to_vec()).await?;
         set_pato_info(id.clone(), character.clone(), "set_character_of").await?;
@@ -319,6 +319,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
         let file_url = response.text().await?;
 
         let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
+        println!("image source: {}, saved: {}", file_url, saved_local_file);
         download_image(&file_url, &saved_local_file).await?;
 
         let xfiles_path = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
