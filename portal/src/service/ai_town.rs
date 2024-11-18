@@ -9,10 +9,11 @@ use metapower_framework::{
     PatoInfo, XFILES_SERVER,
 };
 use serde::{Deserialize, Serialize};
+use tokio::time;
 use std::env;
 use std::fs::File;
 use std::str::from_utf8;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 use std::io::Write;
 use crate::service::{
     CreateResonse, HotTopicResponse, KolRelations, NameResponse, PatoInfoResponse, SharedKnowledgesResponse, SimpleResponse, TokenResponse
@@ -253,17 +254,13 @@ pub async fn request_submit_tags_with_proxy(
     session: String,
     tags: Vec<String>
 ) -> Result<(), Error> {
+
+    // time::sleep(Duration::from_millis(500)).await;
     let lock_file_path = format!("/tmp/{}.lock", session);
-    // Open or create the lock file
-    let lock_file = File::create(lock_file_path)?;
-
-    // Acquire an exclusive lock on the file
-    lock_file.lock_exclusive()?;
-
-    submit_tags_with_proxy(tags, session, id).await?;
-
-    // Release the lock
-    lock_file.unlock()?;
+    if !std::path::Path::new(&lock_file_path).exists() {
+        let _ = File::create(&lock_file_path)?;
+        submit_tags_with_proxy(tags, session, id).await?;
+    }
     Ok(())
 }
 pub async fn get_pato_chat_messages(
