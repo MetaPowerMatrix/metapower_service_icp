@@ -141,7 +141,7 @@ pub async fn get_content_embeddings(content: String) -> Result<Vec<f32>, Error>{
 
     let saved_bytes = response.bytes().await?;
     let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
-    println!("converted embedding: {:?}", embedding);
+    // println!("converted embedding: {:?}", embedding);
 
     Ok(embedding)
 }
