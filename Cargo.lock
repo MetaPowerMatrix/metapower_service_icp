@@ -3075,7 +3075,6 @@ dependencies = [
  "candid",
  "dotenv",
  "ethers",
- "fs2",
  "futures",
  "futures-util",
  "ic-agent",

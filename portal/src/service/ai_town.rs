@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Error};
 use candid::{CandidType, Decode, Encode, Principal};
-use fs2::FileExt;
 use metapower_framework::icp::{
     call_update_method, init_icp_agent, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER, NAIS_MATRIX_CANISTER, NAIS_VECTOR_CANISTER
 };
@@ -9,16 +8,15 @@ use metapower_framework::{
     PatoInfo, XFILES_SERVER,
 };
 use serde::{Deserialize, Serialize};
-use tokio::time;
 use std::env;
 use std::fs::File;
 use std::str::from_utf8;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 use std::io::Write;
 use crate::service::{
     CreateResonse, HotTopicResponse, KolRelations, NameResponse, PatoInfoResponse, SharedKnowledgesResponse, SimpleResponse, TokenResponse
 };
-use crate::{KolInfo, PlainDoc, VecDoc, VecQuery};
+use crate::{KolInfo, PlainDoc, VecQuery};
 
 use super::llm_proxy::{gen_image_save_in_canister, get_content_embeddings, read_session_file, submit_tags_with_proxy, upload_knowledge_save_in_canister};
 use super::{
