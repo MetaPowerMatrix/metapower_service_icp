@@ -141,7 +141,7 @@ pub async fn get_content_embeddings(content: String) -> Result<Vec<f32>, Error>{
 
     let saved_bytes = response.bytes().await?;
     let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
-    println!("embedding: {:?}", embedding);
+    println!("converted embedding: {:?}", embedding);
 
     Ok(embedding)
 }
@@ -171,7 +171,7 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
 
         let saved_bytes = response.bytes().await?;
         let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
-        println!("embedding: {:?}", embedding);
+        // println!("embedding: {:?}", embedding);
         match add_embedding(String::from_utf8(content.clone()).unwrap_or_default(), embedding).await{
             Ok(_) => {}
             Err(e) => {

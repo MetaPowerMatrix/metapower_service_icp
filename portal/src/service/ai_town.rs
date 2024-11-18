@@ -326,7 +326,7 @@ pub async fn query_embedding(embeddings: Vec<f32>) -> Result<Option<Vec<PlainDoc
     let agent = init_icp_agent().await?;
     let effective_canister_id = Principal::from_text(NAIS_VECTOR_CANISTER).unwrap();
     let query = VecQuery::Embeddings(embeddings.clone());
-    let size = embeddings.len();
+    let size: usize = 4;
 
     match agent.query(&effective_canister_id, "search")
         .with_effective_canister_id(effective_canister_id)
