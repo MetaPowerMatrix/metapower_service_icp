@@ -37,7 +37,7 @@ pub async fn download_image(url: &str, file_path: &str) -> Result<(), anyhow::Er
             }
         },
         Err(e) => {
-            return Err(anyhow!(format!("Failed to download image: {}", e)));
+            return Err(anyhow!(format!("Failed to send request: {}", e)));
         }
     }
 

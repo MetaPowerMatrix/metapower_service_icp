@@ -316,7 +316,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
             .json(&json!(avatar_request))
             .send()
             .await?;
-        let file_url = response.text().await?;
+        let file_url: String = response.json().await?;
 
         let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
         println!("image source: {}, saved: {}", file_url, saved_local_file);
@@ -353,13 +353,15 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
             .json(&json!(avatar_request))
             .send()
             .await?;
-        let file_url = response.text().await?;
+        let file_url: String = response.json().await?;
+
+        let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
+        println!("image source: {}, saved: {}", file_url, saved_local_file);
+        download_image(&file_url, &saved_local_file).await?;
 
         let xfiles_path = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
         set_pato_info(id.clone(), xfiles_path, "set_cover_of").await?;
 
-        let saved_local_file = format!("{}/ai/{}/{}", XFILES_LOCAL_DIR, id, local_name);
-        download_image(&file_url, &saved_local_file).await?;
         match OpenOptions::new().read(true).open(&saved_local_file){
             Ok(mut file) => {
                 let mut content: Vec<u8> = Vec::new();
