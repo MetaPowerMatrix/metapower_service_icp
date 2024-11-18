@@ -337,7 +337,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
         }
     }
 
-    let url = format!("{}{}/api/gen/cover", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
+    let url = format!("{}{}/api/gen/image", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
     let avatar_request = ImageGenRequest {
         prompt: character.clone(),
     };
