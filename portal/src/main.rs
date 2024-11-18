@@ -12,6 +12,7 @@ use actix_web::{
 use candid::CandidType;
 use futures::StreamExt;
 use futures::TryStreamExt;
+use metapower_framework::get_now_secs_str;
 use metapower_framework::{
     dao::crawler::download_image, ensure_directory_exists, DataResponse, XFILES_LOCAL_DIR, XFILES_SERVER
 };
@@ -291,6 +292,7 @@ async fn portal_upload_knowledge(mut payload: Multipart) -> actix_web::Result<im
             if !content.is_empty() {
                 let mut hasher = sha1::Sha1::new();
                 hasher.update(&content);
+                hasher.update(get_now_secs_str());
                 session = format!("{:x}", hasher.finalize());
                 file_bytes = content.as_bytes().to_vec();    
             }
