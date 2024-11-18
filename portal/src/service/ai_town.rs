@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Error};
 use candid::{CandidType, Decode, Encode, Principal};
+use fs2::FileExt;
 use metapower_framework::icp::{
     call_update_method, init_icp_agent, AGENT_BATTERY_CANISTER, AGENT_SMITH_CANISTER, NAIS_MATRIX_CANISTER, NAIS_VECTOR_CANISTER
 };
@@ -9,6 +10,7 @@ use metapower_framework::{
 };
 use serde::{Deserialize, Serialize};
 use std::env;
+use std::fs::File;
 use std::str::from_utf8;
 use std::time::SystemTime;
 use std::io::Write;
@@ -251,8 +253,17 @@ pub async fn request_submit_tags_with_proxy(
     session: String,
     tags: Vec<String>
 ) -> Result<(), Error> {
+    let lock_file_path = format!("/tmp/{}.lock", session);
+    // Open or create the lock file
+    let lock_file = File::create(lock_file_path)?;
+
+    // Acquire an exclusive lock on the file
+    lock_file.lock_exclusive()?;
+
     submit_tags_with_proxy(tags, session, id).await?;
 
+    // Release the lock
+    lock_file.unlock()?;
     Ok(())
 }
 pub async fn get_pato_chat_messages(
