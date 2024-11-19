@@ -270,7 +270,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
     if !exists{
         let url = format!("{}{}/api/gen/character", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
         let tag_request = CharacterGenRequest {
-            tags,
+            tags: tags.clone(),
             name: get_pato_name(id.clone()).await.unwrap_or_default(),
             gender: "".to_string(),
         };
@@ -339,7 +339,7 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
 
     let url = format!("{}{}/api/gen/image", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
     let avatar_request = ImageGenRequest {
-        prompt: character.clone(),
+        prompt: tags.join(","),
     };
     let local_name = "cover.png".to_string();
 
