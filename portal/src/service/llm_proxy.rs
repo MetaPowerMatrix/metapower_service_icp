@@ -325,16 +325,16 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
         let xfiles_path = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
         set_pato_info(id.clone(), xfiles_path, "set_avatar_of").await?;
 
-        match OpenOptions::new().read(true).open(&saved_local_file){
-            Ok(mut file) => {
-                let mut content: Vec<u8> = Vec::new();
-                file.read_to_end(&mut content)?;
-                save_session_file(id.clone(), session_key.clone(), local_name, content).await?;
-            }
-            Err(e) => {
-                println!("open file error: {}", e);
-            }
-        }
+        // match OpenOptions::new().read(true).open(&saved_local_file){
+        //     Ok(mut file) => {
+        //         let mut content: Vec<u8> = Vec::new();
+        //         file.read_to_end(&mut content)?;
+        //         save_session_file(id.clone(), session_key.clone(), local_name, content).await?;
+        //     }
+        //     Err(e) => {
+        //         println!("open file error: {}", e);
+        //     }
+        // }
     }
 
     let url = format!("{}{}/api/gen/image", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
@@ -362,16 +362,16 @@ pub async fn submit_tags_with_proxy(tags: Vec<String>, session_key: String, id: 
         let xfiles_path = format!("{}/ai/{}/{}", XFILES_SERVER, id, local_name);
         set_pato_info(id.clone(), xfiles_path, "set_cover_of").await?;
 
-        match OpenOptions::new().read(true).open(&saved_local_file){
-            Ok(mut file) => {
-                let mut content: Vec<u8> = Vec::new();
-                file.read_to_end(&mut content)?;
-                save_session_file(id, session_key, local_name, content).await?;
-            }
-            Err(e) => {
-                println!("open file error: {}", e);
-            }
-        }
+        // match OpenOptions::new().read(true).open(&saved_local_file){
+        //     Ok(mut file) => {
+        //         let mut content: Vec<u8> = Vec::new();
+        //         file.read_to_end(&mut content)?;
+        //         save_session_file(id, session_key, local_name, content).await?;
+        //     }
+        //     Err(e) => {
+        //         println!("open file error: {}", e);
+        //     }
+        // }
     }
 
     Ok(())
