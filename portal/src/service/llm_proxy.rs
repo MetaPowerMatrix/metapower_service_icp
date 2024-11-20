@@ -23,7 +23,7 @@ use serde_json::json;
 use crate::service::PatoInfoResponse;
 use crate::VecDoc;
 
-pub const MAX_SAVE_BYTES: usize = 1024*1024*5;
+pub const MAX_SAVE_BYTES: usize = 1024*1024*2;
 
 #[derive(Clone, Serialize)]
 struct ImageGenRequest {
@@ -213,7 +213,9 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
     println!("check_session_file: {:?} {:?} {}", exists, data, size);
     if !exists{
         println!("upload image save in canister");
-        save_session_file(id.clone(), session_key.clone(), local_name.clone(), content.clone()).await?;
+        if content.len() <= MAX_SAVE_BYTES{
+            save_session_file(id.clone(), session_key.clone(), local_name.clone(), content.clone()).await?;
+        }
 
         let saved_local_file = format!("{}/user/uploaded/{}/{}", XFILES_LOCAL_DIR, id, local_name);
         match OpenOptions::new().write(true).create(true).truncate(true).open(&saved_local_file){
