@@ -148,7 +148,7 @@ pub async fn proxy_contract_call_query_kol_staking(account: String) -> Result<u6
             println!("contract call resp: {:?}", result);
             amount = result.as_u64();
         }
-        Err(e) => println!("Error updating balance: {:?}", e),
+        Err(e) => println!("Error query staking: {:?}", e),
     }
 
     Ok(amount)
@@ -174,7 +174,7 @@ pub async fn proxy_contract_call_query_kol_ticket(account: String) -> Result<u64
             println!("ticket contract call resp: {:?}", result);
             amount = result.as_u64();
         }
-        Err(e) => println!("Error updating balance: {:?}", e),
+        Err(e) => println!("Error query ticket: {:?}", e),
     }
 
     Ok(amount)
