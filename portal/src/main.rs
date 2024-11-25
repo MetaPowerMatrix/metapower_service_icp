@@ -184,6 +184,8 @@ async fn portal_query_kol_staking(info: web::Path<String>) -> actix_web::Result<
 
     let from = info.into_inner();
 
+    // let lock_file_path = format!("/tmp/{}.lock", session);
+
     match proxy_contract_call_query_kol_staking(from).await {
         Ok(staking) => {
             resp.content = staking.to_string();
