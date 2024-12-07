@@ -18,6 +18,8 @@ use metapower_framework::{
 };
 use serde::{Deserialize, Serialize};
 use service::ai_town::request_submit_tags_with_proxy;
+use service::llm_proxy::get_pato_meta;
+use service::llm_proxy::set_pato_info_generic;
 use service::{
     ai_town::{
         become_kol, follow_kol, get_name_by_id, get_pato_chat_messages, get_pato_info,
@@ -426,6 +428,47 @@ async fn proxy_submit_tags(
 
     Ok(web::Json(resp))
 }
+async fn submit_topics(
+    data: web::Path<String>,
+    topics: web::Json<(String, String)>,
+) -> actix_web::Result<impl Responder> {
+    let mut resp = DataResponse {
+        content: String::from(""),
+        code: String::from("200"),
+    };
+
+    let id = data.into_inner();
+
+    match set_pato_info_generic(id.clone(), topics.into_inner(), "set_topics_of").await{
+        Ok(_) => (),
+        Err(e) => {
+            println!("submit_topics error: {}", e);
+            resp.content = e.to_string();
+        }
+    }
+
+    Ok(web::Json(resp))
+}
+async fn get_topics(data: web::Path<String>) -> actix_web::Result<impl Responder> {
+    let mut resp = DataResponse {
+        content: String::from(""),
+        code: String::from("404"),
+    };
+
+    let id = data.into_inner();
+
+    match get_pato_meta(id, "topics_of").await {
+        Ok(topics) => {
+            resp.content = topics;
+            resp.code = String::from("200");
+        }
+        Err(e) => {
+            println!("error: {}", e);
+        }
+    }
+    Ok(web::Json(resp))
+}
+
 async fn portal_get_pato_info(id: web::Path<String>) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
@@ -780,6 +823,14 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                             .service(
                                 web::resource("submit/tags/{id}/{session}")
                                     .route(web::post().to(portal_submit_tags)),
+                            )
+                            .service(
+                                web::resource("submit/topic/{id}")
+                                    .route(web::post().to(submit_topics)),
+                            )
+                            .service(
+                                web::resource("topics/{id}")
+                                    .route(web::get().to(get_topics)),
                             )
                             .service(
                                 web::resource("proxy/submit/tags/{id}/{session}")

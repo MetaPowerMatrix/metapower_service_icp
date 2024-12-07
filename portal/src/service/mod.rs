@@ -51,7 +51,7 @@ pub struct PopulationRegistrationRequest {
     pub name: String,
 }
 
-#[derive(Deserialize, CandidType, Default)]
+#[derive(Deserialize, CandidType, Default, Serialize)]
 pub struct PatoInfoResponse {
     pub id: String,
     pub name: String,
@@ -61,6 +61,8 @@ pub struct PatoInfoResponse {
     pub tags: Vec<String>,
     pub avatar: String,
     pub cover: String,
+    pub followers: Vec<(String, String)>,
+    pub followings: Vec<(String, String)>,
 }
 
 #[derive(Deserialize, CandidType, Debug)]

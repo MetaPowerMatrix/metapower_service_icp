@@ -247,6 +247,20 @@ pub async fn upload_image_save_in_canister(session_key: String, id: String, cont
 
     Ok(desc)
 }
+pub async fn set_pato_info_generic<T: CandidType>(id: String, data: T, method: &str) -> Result<(), Error> {
+    let agent = init_icp_agent().await?;
+    let effective_canister_id = Principal::from_text(AGENT_BATTERY_CANISTER).unwrap();
+    
+    match agent.update(&effective_canister_id, method)
+        .with_effective_canister_id(effective_canister_id)
+        .with_arg(Encode!(&id, &data)?)
+        .await{
+            Ok(_) => Ok(()),
+            Err(e) => {
+                Err(e.into())
+            }
+        }
+}
 pub async fn set_pato_info(id: String, data: String, method: &str) -> Result<(), Error> {
     let agent = init_icp_agent().await?;
     let effective_canister_id = Principal::from_text(AGENT_BATTERY_CANISTER).unwrap();
@@ -256,6 +270,20 @@ pub async fn set_pato_info(id: String, data: String, method: &str) -> Result<(),
         .with_arg(Encode!(&id, &data)?)
         .await{
             Ok(_) => Ok(()),
+            Err(e) => {
+                Err(e.into())
+            }
+        }
+}
+pub async fn get_pato_meta(id: String, method: &str) -> Result<String, Error> {
+    let agent = init_icp_agent().await?;
+    let effective_canister_id = Principal::from_text(AGENT_BATTERY_CANISTER).unwrap();
+    
+    match agent.query(&effective_canister_id, method)
+        .with_effective_canister_id(effective_canister_id)
+        .with_arg(Encode!(&id)?)
+        .await{
+            Ok(result) => Ok(Decode!(result.as_slice(), String).unwrap_or_default()),
             Err(e) => {
                 Err(e.into())
             }

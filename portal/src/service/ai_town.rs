@@ -18,9 +18,9 @@ use crate::service::{
 };
 use crate::{KolInfo, PlainDoc, VecQuery};
 
-use super::llm_proxy::{gen_image_save_in_canister, get_content_embeddings, read_session_file, submit_tags_with_proxy, upload_knowledge_save_in_canister};
+use super::llm_proxy::{gen_image_save_in_canister, get_content_embeddings, read_session_file, set_pato_info_generic, submit_tags_with_proxy, upload_knowledge_save_in_canister};
 use super::{
-    BecomeKolRequest, JoinKolRoomRequest, SubmitTagsRequest,
+    BecomeKolRequest, SubmitTagsRequest,
 };
 
 #[derive(Deserialize, Debug, Default, Serialize)]
@@ -158,22 +158,11 @@ pub async fn town_register(name: String) -> Result<String, Error> {
     Ok(String::default())
 }
 
-pub async fn get_pato_info(id: String) -> Result<PatoInfo, Error> {
+pub async fn get_pato_info(id: String) -> Result<PatoInfoResponse, Error> {
     match call_update_method(AGENT_SMITH_CANISTER, "request_pato_info", id).await {
         Ok(result) => {
-            let response = Decode!(result.as_slice(), PatoInfoResponse).unwrap_or_default();
+            let pato_info = Decode!(result.as_slice(), PatoInfoResponse).unwrap_or_default();
 
-            let pato_info = PatoInfo {
-                id: response.id.clone(),
-                name: response.name.clone(),
-                sn: response.sn,
-                registered_datetime: response.registered_datetime.clone(),
-                balance: response.balance,
-                tags: response.tags.clone(),
-                avatar: response.avatar.clone(),
-                cover: response.cover.clone(),
-                matrix_datetime: response.registered_datetime,
-            };
             Ok(pato_info)
         }
         Err(e) => Err(anyhow!("request_pato_info error: {}", e)),
@@ -424,23 +413,10 @@ pub async fn become_kol(id: String, from: String) -> Result<String, Error> {
         }
     }
 }
-pub async fn follow_kol(kol: String, follower: String, from: String) -> Result<(), Error> {
-    let request = JoinKolRoomRequest {
-        key: String::default(),
-        kol: kol.clone(),
-        follower,
-        from,
-    };
+pub async fn follow_kol(kol: String, follower: String, name: String) -> Result<(), Error> {
+    set_pato_info_generic(kol.clone(), (follower.clone(), name.clone()), "set_follower_of").await?;
 
-    let req = prepare_battery_call_args(
-        kol,
-        "".to_string(),
-        -1,
-        "request_join_kol_room".to_string(),
-        request,
-    );
-
-    call_update_method(AGENT_BATTERY_CANISTER, "do_battery_service", req).await?;
+    set_pato_info_generic(follower, (kol, name), "set_following_of").await?;
 
     Ok(())
 }
