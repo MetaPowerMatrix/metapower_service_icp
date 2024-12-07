@@ -227,8 +227,10 @@ async fn portal_join_kol(info: web::Path<(String, String, String)>) -> actix_web
     };
 
     let (follower, kol, from) = info.into_inner();
+    let follower_name = get_name_by_id(follower.clone()).await.unwrap_or_default();
+    let kol_name = get_name_by_id(kol.clone()).await.unwrap_or_default();
 
-    if let Err(e) = follow_kol(kol, follower, from).await {
+    if let Err(e) = follow_kol(kol, follower, kol_name, follower_name).await {
         println!("error: {}", e);
         resp.code = String::from("500");
     }
@@ -700,17 +702,17 @@ async fn portal_retrieve_pato_by_name(
 
     Ok(web::Json(resp))
 }
-async fn portal_get_name_by_id(data: web::Json<Vec<String>>) -> actix_web::Result<impl Responder> {
+async fn portal_get_name_by_id(data: web::Path<String>) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
         code: String::from("200"),
     };
 
-    let ids = data.into_inner();
+    let id = data.into_inner();
 
-    match get_name_by_id(ids).await {
-        Ok(info) => {
-            resp.content = info;
+    match get_name_by_id(id).await {
+        Ok(name) => {
+            resp.content = name;
         }
         Err(e) => {
             println!("error: {}", e);
@@ -865,7 +867,7 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                     .route(web::get().to(portal_retrieve_pato_by_name)),
                             )
                             .service(
-                                web::resource("names").route(web::post().to(portal_get_name_by_id)),
+                                web::resource("name/{id}").route(web::get().to(portal_get_name_by_id)),
                             )
                     )
                     .service(

@@ -187,22 +187,11 @@ pub async fn retrieve_pato_by_name(name: String) -> Result<String, Error> {
         Err(e) => Err(anyhow!("request_pato_info error: {}", e)),
     }
 }
-pub async fn get_name_by_id(ids: Vec<String>) -> Result<String, Error> {
-    let req = super::NameRequest { id: ids };
-    match call_update_method(AGENT_SMITH_CANISTER, "request_pato_by_ids", req).await {
+pub async fn get_name_by_id(id: String) -> Result<String, Error> {
+    match call_update_method(AGENT_SMITH_CANISTER, "request_pato_name", id).await {
         Ok(result) => {
-            let response = Decode!(result.as_slice(), NameResponse).unwrap_or_default();
-
-            let mut patos: Vec<PortalPatoOfPro> = vec![];
-            for pato in response.name_pros.iter() {
-                let i = PortalPatoOfPro {
-                    id: pato.id.clone(),
-                    subjects: pato.pros.clone(),
-                    name: pato.name.clone(),
-                };
-                patos.push(i);
-            }
-            Ok(serde_json::to_string(&patos).unwrap_or_default())
+            let name = Decode!(result.as_slice(), String).unwrap_or_default();
+            Ok(name)
         }
         Err(e) => Err(anyhow!("request_pato_info error: {}", e)),
     }
@@ -413,10 +402,10 @@ pub async fn become_kol(id: String, from: String) -> Result<String, Error> {
         }
     }
 }
-pub async fn follow_kol(kol: String, follower: String, name: String) -> Result<(), Error> {
-    set_pato_info_generic(kol.clone(), (follower.clone(), name.clone()), "set_follower_of").await?;
+pub async fn follow_kol(kol: String, follower: String, kol_name: String, follower_name: String) -> Result<(), Error> {
+    set_pato_info_generic(kol.clone(), (follower.clone(), follower_name.clone()), "set_follower_of").await?;
 
-    set_pato_info_generic(follower, (kol, name), "set_following_of").await?;
+    set_pato_info_generic(follower, (kol, kol_name), "set_following_of").await?;
 
     Ok(())
 }
