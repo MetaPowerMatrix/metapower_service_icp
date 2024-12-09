@@ -10,6 +10,7 @@ use std::env;
 use std::{fs, path::Path, time::SystemTime};
 use candid::CandidType;
 use daemonize::Daemonize;
+use md5::{Digest, Md5};
 use serde::de::DeserializeOwned;
 use service::llmchat_model::llmchat_grpc::TileTypeMap;
 use std::fs::File;
@@ -241,6 +242,12 @@ pub fn get_now_mils() -> u128 {
 }
 pub fn get_now_hour() -> u32 {
     Utc::now().hour()
+}
+pub fn compute_md5(input: &str) -> String {
+    let mut hasher = Md5::new();
+    hasher.update(input);
+    let result = hasher.finalize();
+    format!("{:x}", result) 
 }
 pub fn ensure_directory_exists(dir_path: &str) -> std::io::Result<()> {
     let path = Path::new(dir_path);

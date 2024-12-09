@@ -1,3 +1,4 @@
+use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::io::Write;
@@ -8,6 +9,8 @@ use candid::CandidType;
 use candid::Decode;
 use candid::Encode;
 use candid::Principal;
+use md5::compute;
+use metapower_framework::compute_md5;
 use metapower_framework::dao::crawler::download_image;
 use metapower_framework::ensure_directory_exists;
 use metapower_framework::icp::call_update_method;
@@ -27,6 +30,12 @@ pub const MAX_SAVE_BYTES: usize = 1024*1024*2;
 
 #[derive(Clone, Serialize)]
 struct ImageGenRequest {
+    pub prompt: String,
+}
+
+#[derive(Clone, Serialize)]
+struct TopicCommentRequest {
+    pub topic: String,
     pub prompt: String,
 }
 
@@ -442,4 +451,31 @@ pub async fn gen_image_save_in_canister(prompt: String, session_key: String, id:
     }
 
     Ok(resp)
+}
+pub async fn comment_topic(topic: String, prompt: String, contributor: String) -> Result<(), Error> {
+    let url = format!("{}{}/api/chat/topic", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
+    let topic_id = compute_md5(&topic);
+
+    let lock_file_path = format!("/tmp/{}{}.lock", topic_id, contributor);
+    if !std::path::Path::new(&lock_file_path).exists() {
+        let _ = File::create(&lock_file_path)?;
+        let request = TopicCommentRequest {
+            topic,
+            prompt,
+        };
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(&url)
+            .json(&json!(request))
+            .send()
+            .await?;
+
+        let comment: String = response.json().await?;
+
+
+        set_pato_info_generic(topic_id, (comment, contributor), "set_sub_topics_of").await?;
+    }
+
+    Ok(())
 }

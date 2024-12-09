@@ -3042,6 +3042,7 @@ dependencies = [
  "futures",
  "futures-util",
  "ic-agent",
+ "md-5",
  "memcache",
  "paho-mqtt",
  "prost",

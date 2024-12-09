@@ -12,12 +12,14 @@ use actix_web::{
 use candid::CandidType;
 use futures::StreamExt;
 use futures::TryStreamExt;
+use metapower_framework::compute_md5;
 use metapower_framework::get_now_secs_str;
 use metapower_framework::{
     dao::crawler::download_image, ensure_directory_exists, DataResponse, XFILES_LOCAL_DIR, XFILES_SERVER
 };
 use serde::{Deserialize, Serialize};
 use service::ai_town::request_submit_tags_with_proxy;
+use service::llm_proxy::comment_topic;
 use service::llm_proxy::get_pato_meta;
 use service::llm_proxy::set_pato_info_generic;
 use service::{
@@ -34,8 +36,9 @@ use std::path::Path;
 
 #[derive(Deserialize, Debug)]
 struct TopicChatInfo {
-    id: String,
     topic: String,
+    prompt: String,
+    contributor: String,
     session: String,
 }
 
@@ -722,7 +725,7 @@ async fn portal_get_name_by_id(data: web::Path<String>) -> actix_web::Result<imp
 
     Ok(web::Json(resp))
 }
-async fn portal_chat_with_topic_history(
+async fn portal_get_topic_comment(
     data: web::Json<TopicChatInfo>,
 ) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
@@ -730,10 +733,29 @@ async fn portal_chat_with_topic_history(
         code: String::from("200"),
     };
 
-    match get_topic_chat_history(data.id.clone(), data.session.clone()).await {
+    let topic_id = compute_md5(&data.topic);
+    match get_pato_meta(topic_id, "sub_topics_of").await {
         Ok(his) => {
             resp.content = his;
         }
+        Err(e) => {
+            resp.content = format!("{}", e);
+            resp.code = String::from("500");
+        }
+    }
+
+    Ok(web::Json(resp))
+}
+async fn portal_topic_comment(
+    data: web::Json<TopicChatInfo>,
+) -> actix_web::Result<impl Responder> {
+    let mut resp = DataResponse {
+        content: String::from(""),
+        code: String::from("200"),
+    };
+
+    match comment_topic(data.topic.clone(), data.prompt.clone(), data.contributor.clone()).await {
+        Ok(()) => (),
         Err(e) => {
             resp.content = format!("{}", e);
             resp.code = String::from("500");
@@ -872,7 +894,11 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                     )
                     .service(
                         web::resource("topic/chat/history")
-                            .route(web::post().to(portal_chat_with_topic_history)),
+                            .route(web::post().to(portal_get_topic_comment)),
+                    )
+                    .service(
+                        web::resource("topic/comment")
+                            .route(web::post().to(portal_topic_comment)),
                     )
                     .service(web::resource("login/{id}").route(web::get().to(portal_login)))
                     .service(web::resource("register").route(web::post().to(portal_register)))
