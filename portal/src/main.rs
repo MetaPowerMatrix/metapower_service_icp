@@ -755,7 +755,6 @@ async fn portal_topic_comment(
         code: String::from("200"),
     };
 
-    println!("comment topic: {:?}", data);
     match comment_topic(data.topic.clone(), data.prompt.clone(), data.contributor.clone()).await {
         Ok(()) => (),
         Err(e) => {
