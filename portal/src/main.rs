@@ -734,6 +734,7 @@ async fn portal_get_topic_comment(
     };
 
     let topic_id = compute_md5(&data.topic);
+    println!("get comments of {}", topic_id);
     match get_pato_meta(topic_id, "sub_topics_of").await {
         Ok(his) => {
             resp.content = his;
