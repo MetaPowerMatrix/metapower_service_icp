@@ -18,6 +18,7 @@ use metapower_framework::{
     dao::crawler::download_image, ensure_directory_exists, DataResponse, XFILES_LOCAL_DIR, XFILES_SERVER
 };
 use serde::{Deserialize, Serialize};
+use service::ai_town::get_names_by_ids;
 use service::ai_town::request_submit_tags_with_proxy;
 use service::llm_proxy::comment_topic;
 use service::llm_proxy::get_pato_meta;
@@ -738,10 +739,20 @@ async fn portal_get_topic_comment(
     match get_pato_meta(topic_id, "sub_topics_of").await {
         Ok(his) => {
             let mut comments = serde_json::from_str::<Vec<(String,String)>>(&his).unwrap_or_default();
-            for comment in comments.iter_mut(){
-                let name = get_name_by_id(comment.1.clone()).await.unwrap_or_default();
-                comment.1 = name;
+            let mut ids: Vec<String> = vec![];
+            for comment in comments.iter(){
+                ids.push(comment.1.clone());
             }
+            let names = get_names_by_ids(ids).await.unwrap_or_default();
+            for comment in comments.iter_mut(){
+                for name in names.iter(){
+                    if name.0 == comment.0{
+                        comment.1 = name.1.clone();
+                        break;
+                    }
+                }
+            }
+
             let json_str = serde_json::to_string(&comments).unwrap_or_default();
             resp.content = json_str;
         }

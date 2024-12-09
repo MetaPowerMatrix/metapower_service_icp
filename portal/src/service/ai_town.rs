@@ -196,6 +196,15 @@ pub async fn get_name_by_id(id: String) -> Result<String, Error> {
         Err(e) => Err(anyhow!("request_pato_info error: {}", e)),
     }
 }
+pub async fn get_names_by_ids(ids: Vec<String>) -> Result<Vec<(String,String)>, Error> {
+    match call_update_method(AGENT_SMITH_CANISTER, "request_pato_names", ids).await {
+        Ok(result) => {
+            let name = Decode!(result.as_slice(), Vec<(String,String)>).unwrap_or_default();
+            Ok(name)
+        }
+        Err(e) => Err(anyhow!("request_pato_info error: {}", e)),
+    }
+}
 
 pub async fn archive_pato_session(id: String, session_key: String, content: String) -> Result<String, Error> {
     let local_name = "chat_messages.json".to_string();
