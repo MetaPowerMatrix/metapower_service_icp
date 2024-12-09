@@ -737,7 +737,13 @@ async fn portal_get_topic_comment(
     println!("get comments of {}", topic_id);
     match get_pato_meta(topic_id, "sub_topics_of").await {
         Ok(his) => {
-            resp.content = his;
+            let mut comments = serde_json::from_str::<Vec<(String,String)>>(&his).unwrap_or_default();
+            for comment in comments.iter_mut(){
+                let name = get_name_by_id(comment.1.clone()).await.unwrap_or_default();
+                comment.1 = name;
+            }
+            let json_str = serde_json::to_string(&comments).unwrap_or_default();
+            resp.content = json_str;
         }
         Err(e) => {
             resp.content = format!("{}", e);
