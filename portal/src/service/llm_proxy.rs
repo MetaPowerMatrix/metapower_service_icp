@@ -155,6 +155,34 @@ pub async fn get_content_embeddings(content: String) -> Result<Vec<f32>, Error>{
     Ok(embedding)
 }
 
+pub async fn upload_topic_comment_save_in_canister(content: Vec<u8>) -> Result<(), Error> {
+    let url_embedding = format!("{}{}/api/gen/embedding", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
+
+    let embedding_request = FileGenRequest{ content: String::from_utf8(content.clone()).unwrap_or_default() };
+    let client = reqwest::Client::new();
+
+    if content.len() <= MAX_SAVE_BYTES{
+        let response = client
+            .post(&url_embedding)
+            .json(&json!(embedding_request))
+            .send()
+            .await?;
+
+        let saved_bytes = response.bytes().await?;
+        let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
+        // println!("embedding: {:?}", embedding);
+        match add_embedding(String::from_utf8(content.clone()).unwrap_or_default(), embedding).await{
+            Ok(_) => {}
+            Err(e) => {
+                println!("add_embedding error: {}", e);
+            }
+        };
+    }
+        
+
+    Ok(())
+}
+
 pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, file_name: String, content: Vec<u8>) -> Result<String, Error> {
     let _ = ensure_directory_exists(&format!("{}/ai/{}", XFILES_LOCAL_DIR, id));
     let url_embedding = format!("{}{}/api/gen/embedding", LLM_REQUEST_PROTOCOL, LLM_HTTP_HOST);
@@ -180,14 +208,14 @@ pub async fn upload_knowledge_save_in_canister(session_key: String, id: String, 
                 .await?;
 
             let saved_bytes = response.bytes().await?;
-            let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
+            // let embedding: Vec<f32> = serde_json::from_slice(&saved_bytes)?;
             // println!("embedding: {:?}", embedding);
-            match add_embedding(String::from_utf8(content.clone()).unwrap_or_default(), embedding).await{
-                Ok(_) => {}
-                Err(e) => {
-                    println!("add_embedding error: {}", e);
-                }
-            };
+            // match add_embedding(String::from_utf8(content.clone()).unwrap_or_default(), embedding).await{
+            //     Ok(_) => {}
+            //     Err(e) => {
+            //         println!("add_embedding error: {}", e);
+            //     }
+            // };
             let embedding_file = local_name.clone() + ".embed";
             save_session_file(id.clone(), session_key.clone(), embedding_file, saved_bytes.to_vec()).await?;
         }

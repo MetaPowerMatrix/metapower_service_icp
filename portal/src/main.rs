@@ -23,6 +23,7 @@ use service::ai_town::request_submit_tags_with_proxy;
 use service::llm_proxy::comment_topic;
 use service::llm_proxy::get_pato_meta;
 use service::llm_proxy::set_pato_info_generic;
+use service::llm_proxy::upload_topic_comment_save_in_canister;
 use service::{
     ai_town::{
         become_kol, follow_kol, get_name_by_id, get_pato_chat_messages, get_pato_info,
@@ -782,6 +783,24 @@ async fn portal_topic_comment(
 
     Ok(web::Json(resp))
 }
+async fn portal_topic_embedding(
+    data: web::Json<TopicChatInfo>,
+) -> actix_web::Result<impl Responder> {
+    let mut resp = DataResponse {
+        content: String::from(""),
+        code: String::from("200"),
+    };
+
+    match upload_topic_comment_save_in_canister(data.topic.as_bytes().to_vec()).await {
+        Ok(()) => (),
+        Err(e) => {
+            resp.content = format!("{}", e);
+            resp.code = String::from("500");
+        }
+    }
+
+    Ok(web::Json(resp))
+}
 pub async fn download_generated_file_with_path(
     id: web::Path<String>, path: web::Json<PathInfo>,
 )  -> actix_web::Result<impl Responder>  {
@@ -917,6 +936,10 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                     .service(
                         web::resource("topic/comment")
                             .route(web::post().to(portal_topic_comment)),
+                    )
+                    .service(
+                        web::resource("topic/embedding")
+                            .route(web::post().to(portal_topic_embedding)),
                     )
                     .service(web::resource("login/{id}").route(web::get().to(portal_login)))
                     .service(web::resource("register").route(web::post().to(portal_register)))
