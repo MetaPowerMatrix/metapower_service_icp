@@ -458,7 +458,7 @@ pub async fn comment_topic(topic: String, prompt: String, contributor: String) -
 
     let lock_file_path = format!("/tmp/{}{}.lock", topic_id, contributor);
     if !std::path::Path::new(&lock_file_path).exists() {
-        println!("do comment");
+        println!("do comment {}", topic_id);
         let _ = File::create(&lock_file_path)?;
         let request = TopicCommentRequest {
             topic,
