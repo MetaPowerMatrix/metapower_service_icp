@@ -746,7 +746,7 @@ async fn portal_get_topic_comment(
             let names = get_names_by_ids(ids).await.unwrap_or_default();
             for comment in comments.iter_mut(){
                 for name in names.iter(){
-                    if name.0 == comment.0{
+                    if name.0 == comment.1{
                         comment.1 = name.1.clone();
                         break;
                     }
