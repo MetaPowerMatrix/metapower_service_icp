@@ -707,17 +707,15 @@ async fn portal_retrieve_pato_by_name(
 
     Ok(web::Json(resp))
 }
-async fn portal_get_name_by_id(data: web::Path<String>) -> actix_web::Result<impl Responder> {
+async fn portal_get_names_by_ids(ids: web::Json<Vec<String>>) -> actix_web::Result<impl Responder> {
     let mut resp = DataResponse {
         content: String::from(""),
         code: String::from("200"),
     };
 
-    let id = data.into_inner();
-
-    match get_name_by_id(id).await {
+    match get_names_by_ids(ids.into_inner()).await {
         Ok(name) => {
-            resp.content = name;
+            resp.content = serde_json::to_string(&name).unwrap_or_default();
         }
         Err(e) => {
             println!("error: {}", e);
@@ -926,7 +924,7 @@ pub fn config_app(cfg: &mut web::ServiceConfig) {
                                     .route(web::get().to(portal_retrieve_pato_by_name)),
                             )
                             .service(
-                                web::resource("name/{id}").route(web::get().to(portal_get_name_by_id)),
+                                web::resource("names").route(web::post().to(portal_get_names_by_ids)),
                             )
                     )
                     .service(
